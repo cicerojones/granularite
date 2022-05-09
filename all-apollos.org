@@ -1,0 +1,3421 @@
+* A level
+:PROPERTIES:
+:header-args: :results silent
+:END:
+** [#A] note-on ON-EVENTER (note-on event handler for ANY active synth!)
+
+
+*** some notes on the function
+
+- Should be "note-on-eventer" with more explanation
+
+- hard-codes =current-val= as the "centerpos determiner" value
+
+  - what is "current-val" and where is it defined?
+
+- uses maprange instead of scale-range
+
+- hard-codes =dst-hi= for the maprange hi
+
+  - should make some use of buffer-duration??
+
+  - where are these refs set?
+    - [[id:EEC0B1AC-D5F4-40F8-ACDF-629441E38812][define refs (for full composing with high-level granular synth)]]
+  - where are the controls for =dst-hi= exactly?
+    - event-handler ::test-range-high
+      - [[id:5B64A0AA-C2B5-468A-A39F-4DC5D3EF55D0][keyboard keys and transport event handlers, with scaling (hard codes synth!)]]
+
+- raises errors when the synth it is defined for is "inactive"?
+  - must manually remove event handler in that case?
+  - or is this a problem from somewhere else?
+
+- octave of keyboard must be appropriately set!
+
+
+
+
+*** instantiate general-tgrains for note-on-eventer control
+
+Step 1. Must activate a synth
+
+Step 2. Begin to control with with the note-on-eventer
+
+
+#+BEGIN_SRC clojure :results silent
+(def var1-noline (general-tgrains-synth :buffer 0 :centerpos 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def var2-noline (general-tgrains-synth :buffer 1 :centerpos 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (note-on-eventer var2-noline ::no-liner)
+;;
+(note-on-eventer var1-noline ::no-liner)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::no-liner)
+#+END_SRC
+
+
+** [#A] cc-change ON-EVENTER
+
+*** create and remove handler
+
+#+BEGIN_SRC clojure :results silent
+(cc-on-eventer dst-hi 3 ::dst-hi-change)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::dst-hi-change)
+#+END_SRC
+
+
+
+** make abstraction for playing with CC and granular synth
+:PROPERTIES:
+:ID:       EEEBABF7-6A2A-4B1A-9D57-D1C8E0D42E72
+:VISIBILITY: content
+:END:
+
+*** preliminaries
+- define atoms for two sets of channels and CC messages (see 'restart'
+  section above)
+
+
+*** Confirm current channel number
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note val :velocity chan :channel}]
+            (if (= chan 1) (println chan) (println chan))
+             )
+::cc-state-if)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::cc-state-if)
+#+END_SRC
+
+
+
+** use refs for setting values of synth parameters
+
+*** trigger start position from keyboard
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+          
+            (fn [{note :note}]
+              (let [val (deref current-val)]
+                (do (reset! current-val (maprange [60 91] [0.0 100] note))
+                    (ctl gold :centerpos val)
+                    (println (round2 val 2)))))
+                ::set-current-val-and-play)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::set-current-val-and-play)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+          
+            (fn [{note :note}]
+              (let [val (deref current-val)]
+                (do (reset! current-val (maprange [60 91] [0.0 @dst-hi] note))
+                    (ctl gold :centerpos val)
+                    (println (round2 val 2)))))
+                ::set-current-val-scale-and-play)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::set-current-val-scale-and-play)
+#+END_SRC
+
+
+*** [#A] set 'dst-hi' ref from cc-2
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 2) (do (reset! dst-hi vel)
+                                   (println "dst-hi: " @dst-hi))))
+              ::test-range-high)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::test-range-high)
+#+END_SRC
+
+
+*** use cc-3 to set 'trate-ref' (with goldberg)
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 3)
+                    (do (reset! trate-ref vel)
+                        (ctl gold :trate (maprange [0 127] [0.01 2] vel))
+                        (println vel))))
+            ::set-trate-and-play)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl gold :trate 0.5)
+#+END_SRC
+
+
+*** use cc-4 to set 'durnumerator'
+#+BEGIN_SRC clojure :results silent
+(ctl gold :dur-numerator 12)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 4)
+                    (do (reset! durnumerator-ref vel)
+                        (ctl gold :dur-numerator (maprange [0 127] [1 20] vel))
+                        (println vel))))
+            ::set-durnum-and-play)
+#+END_SRC
+** Apollo-overtone restart essentials
+:PROPERTIES:
+:ID:       DFFB3F5A-370C-4D2A-BA61-685E4B73CCAC
+:VISIBILITY: content
+:END:
+
+*** stop all sound
+
+#+BEGIN_SRC clojure
+(stop)
+#+END_SRC
+
+#+RESULTS:
+: nil
+
+
+*** record all sound
+#+BEGIN_SRC clojure :results silent
+(recording-start "~/Desktop/goldberg-2016-1.wav")
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(recording-start "~/Desktop/goldberg-2016-2.wav")
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(recording-start "~/Desktop/goldberg-2017-1.wav")
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(recording-start "~/Desktop/yancey-2016-1.wav")
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(recording-stop)
+#+END_SRC
+
+
+*** use overtone.core, connect to external
+
+#+BEGIN_SRC clojure :results silent
+(use 'overtone.core)
+;; will appear to time out but all is well--check below
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(connect-external-server)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo (sin-osc))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(use 'overtone.live)
+#+END_SRC
+
+
+*** loaded buffers (with overview notes)
+:PROPERTIES:
+:ID:       19C65970-C333-4D09-AD7B-31C158D9C120
+:END:
+
+**** load all apollo soundfiles into overtone
+:PROPERTIES:
+:ID:       C99A4AE2-B22E-4F21-88B8-E64B3CC4D6E2
+:END:
+
+***** preferred sequence for loading apollo and other incarnation samples
+:PROPERTIES:
+:ID:       62220D41-AE0A-4D5F-B2D6-6B100610A89B
+:END:
+#+BEGIN_SRC clojure :results silent
+
+(def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
+(def path-to-mono (str path-to-sounds "sounds/all-mono/"))
+#+END_SRC
+
+
+
+#+RESULTS:
+: #'user/variation1#'user/variation2#'user/apotheose#'user/calliope#'user/coda#'user/yancey#'user/naissance#'user/pas-daction#'user/pas-deux#'user/polymnie#'user/terpsichore#'user/goldberg-slow#'user/irma
+
+
+***** load single buffers
+***** shorthand buffer mnemonics
+Where should we put Goldberg?
+0.
+1. solo violin (variation1)
+2. big forte three chords (open-closed fist--variation2)
+3. "morendo" (apotheose)
+4. spikey 6/8 (calliope)
+5. uptemp coda (flipside, pre-apotheose)
+6. yancey 
+7. very opening, string sixteenth dotted-eighth (naissance)
+8. gentle, pre pas-de-deux (pas d'action)
+9. gradual tenutos (pas-de-deux)
+10. bright, sixteenth note runs (polymnie)
+11. spiky sixteenth dotted-eighth (terpsichore)
+12. 
+13. 
+14. 
+
+
+
+
+**** various buffer infos
+
+***** buffer id
+#+BEGIN_SRC clojure 
+(buffer-id variation1)
+(buffer-id variation2)
+(buffer-id apotheose)
+(buffer-id calliope)
+(buffer-id coda)
+(buffer-id yancey)
+(buffer-id naissance)
+(buffer-id pas-daction)
+(buffer-id pas-deux)
+(buffer-id polymnie)
+(buffer-id terpsichore)
+(buffer-id goldberg-slow)
+(buffer-id irma)
+#+END_SRC
+
+#+RESULTS:
+: 123456789101112
+
+
+***** [#A] full info
+#+BEGIN_SRC clojure :results output
+(for [name [variation1 variation2 apotheose calliope coda yancey naissance pas-daction pas-deux polymnie terpsichore goldberg-slow irma]]
+(do  (pprint name) (println)))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+{:id 1,
+ :size 7658496,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@4bd2aa6c: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/apollo-variation1-mono.wav",
+ :args {},
+ :name "apollo-variation1-mono.wav",
+ :rate-scale 1.0,
+ :duration 173.66204081632654,
+ :n-samples 7658496}
+
+{:id 2,
+ :size 7216896,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@608be141: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/apollo-variation2-mono.wav",
+ :args {},
+ :name "apollo-variation2-mono.wav",
+ :rate-scale 1.0,
+ :duration 163.64843537414967,
+ :n-samples 7216896}
+
+{:id 3,
+ :size 8620032,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@4d530c8a: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/apotheose-mono.wav",
+ :args {},
+ :name "apotheose-mono.wav",
+ :rate-scale 1.0,
+ :duration 195.4655782312925,
+ :n-samples 8620032}
+
+{:id 4,
+ :size 4876288,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@142fc985: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/calliope-mono.wav",
+ :args {},
+ :name "calliope-mono.wav",
+ :rate-scale 1.0,
+ :duration 110.57342403628118,
+ :n-samples 4876288}
+
+{:id 5,
+ :size 7805824,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@3ad9b505: :live>,
+ :path "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/coda-mono.wav",
+ :args {},
+ :name "coda-mono.wav",
+ :rate-scale 1.0,
+ :duration 177.0028117913832,
+ :n-samples 7805824}
+
+{:id 6,
+ :size 12036573,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@135beb7c: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/how-long-slowest-mono.wav",
+ :args {},
+ :name "how-long-slowest-mono.wav",
+ :rate-scale 1.0,
+ :duration 272.9381632653061,
+ :n-samples 12036573}
+
+{:id 7,
+ :size 12697600,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@57f1c1d: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/naissance-mono.wav",
+ :args {},
+ :name "naissance-mono.wav",
+ :rate-scale 1.0,
+ :duration 287.9274376417234,
+ :n-samples 12697600}
+
+{:id 8,
+ :size 12649472,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@34c40340: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/pas-daction-real-mono.wav",
+ :args {},
+ :name "pas-daction-real-mono.wav",
+ :rate-scale 1.0,
+ :duration 286.8360997732426,
+ :n-samples 12649472}
+
+{:id 9,
+ :size 10633344,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@1216892f: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/pas-de-deux-mono1.wav",
+ :args {},
+ :name "pas-de-deux-mono1.wav",
+ :rate-scale 1.0,
+ :duration 241.11891156462585,
+ :n-samples 10633344}
+
+{:id 10,
+ :size 3202816,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@1e768dc8: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/polymnie-mono.wav",
+ :args {},
+ :name "polymnie-mono.wav",
+ :rate-scale 1.0,
+ :duration 72.62621315192743,
+ :n-samples 3202816}
+
+{:id 11,
+ :size 5381632,
+ :n-channels 2,
+ :rate 44100.0,
+ :status #<Atom@68de4551: :live>,
+ :path
+ "/Users/b/Dropbox/AB-local/sc-sounds/all-mono/terpsichore-mono.wav",
+ :args {},
+ :name "terpsichore-mono.wav",
+ :rate-scale 1.0,
+ :duration 122.03247165532879,
+ :n-samples 10763264}
+
+{:id 12,
+ :size 8138240,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@4446018d: :live>,
+ :path
+ "/Users/b/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav",
+ :args {},
+ :name "goldberg-slow-mono.wav",
+ :rate-scale 1.0,
+ :duration 184.540589569161,
+ :n-samples 8138240}
+
+{:id 13,
+ :size 7564032,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@5531d516: :live>,
+ :path "/Users/b/Dropbox/AB-local/sc-sounds/full-time-mono.wav",
+ :args {},
+ :name "full-time-mono.wav",
+ :rate-scale 1.0,
+ :duration 171.52,
+ :n-samples 7564032}
+
+#+end_example
+
+
+***** basic buffer-info                                         :buffer:info:
+#+BEGIN_SRC clojure :results output
+  (for [name [variation1 variation2 apotheose calliope coda yancey naissance pas-daction pas-deux polymnie terpsichore goldberg-slow irma]]
+  (do  (pprint (buffer-info name)) (println name) (println)))
+
+  ;; (buffer-info variation1)
+  ;; (buffer-info variation2)
+  ;; (buffer-info apotheose)
+  ;; (buffer-info calliope)
+  ;; (buffer-info coda)
+  ;; (buffer-info yancey)
+  ;; (buffer-info naissance)
+  ;; (buffer-info pas-daction)
+  ;; (buffer-info pas-deux)
+  ;; (buffer-info polymnie)
+  ;; (buffer-info terpsichore)
+
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+{:id 0,
+ :size 7658496,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 7658496,
+ :rate-scale 1.0,
+ :duration 173.66204081632654}
+#<buffer[live]: apollo-variation1-mono.wav 173.662041s mono 0>
+
+{:id 1,
+ :size 7216896,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 7216896,
+ :rate-scale 1.0,
+ :duration 163.64843537414967}
+#<buffer[live]: apollo-variation2-mono.wav 163.648435s mono 1>
+
+{:id 2,
+ :size 8620032,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 8620032,
+ :rate-scale 1.0,
+ :duration 195.4655782312925}
+#<buffer[live]: apotheose-mono.wav 195.465578s mono 2>
+
+{:id 3,
+ :size 4876288,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 4876288,
+ :rate-scale 1.0,
+ :duration 110.57342403628118}
+#<buffer[live]: calliope-mono.wav 110.573424s mono 3>
+
+{:id 4,
+ :size 7805824,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 7805824,
+ :rate-scale 1.0,
+ :duration 177.0028117913832}
+#<buffer[live]: coda-mono.wav 177.002812s mono 4>
+
+{:id 5,
+ :size 12036573,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 12036573,
+ :rate-scale 1.0,
+ :duration 272.9381632653061}
+#<buffer[live]: how-long-slowest-mono.wav 272.938163s mono 5>
+
+{:id 6,
+ :size 12697600,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 12697600,
+ :rate-scale 1.0,
+ :duration 287.9274376417234}
+#<buffer[live]: naissance-mono.wav 287.927438s mono 6>
+
+{:id 7,
+ :size 12649472,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 12649472,
+ :rate-scale 1.0,
+ :duration 286.8360997732426}
+#<buffer[live]: pas-daction-real-mono.wav 286.836100s mono 7>
+
+{:id 8,
+ :size 10633344,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 10633344,
+ :rate-scale 1.0,
+ :duration 241.11891156462585}
+#<buffer[live]: pas-de-deux-mono1.wav 241.118912s mono 8>
+
+{:id 9,
+ :size 3202816,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 3202816,
+ :rate-scale 1.0,
+ :duration 72.62621315192743}
+#<buffer[live]: polymnie-mono.wav 72.626213s mono 9>
+
+{:id 10,
+ :size 5381632,
+ :n-channels 2,
+ :rate 44100.0,
+ :n-samples 10763264,
+ :rate-scale 1.0,
+ :duration 122.03247165532879}
+#<buffer[live]: terpsichore-mono.wav 122.032472s stereo 10>
+
+{:id 11,
+ :size 8138240,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 8138240,
+ :rate-scale 1.0,
+ :duration 184.540589569161}
+#<buffer[live]: goldberg-slow-mono.wav 184.540590s mono 11>
+
+{:id 12,
+ :size 7564032,
+ :n-channels 1,
+ :rate 44100.0,
+ :n-samples 7564032,
+ :rate-scale 1.0,
+ :duration 171.52}
+#<buffer[live]: full-time-mono.wav 171.520000s mono 12>
+
+#+end_example
+
+
+***** buffer-size
+#+BEGIN_SRC clojure
+(buffer-size variation1)
+(buffer-size variation2)
+(buffer-size apotheose)
+(buffer-size calliope)
+(buffer-size coda)
+(buffer-size yancey)
+(buffer-size naissance)
+(buffer-size pas-daction)
+(buffer-size pas-deux)
+(buffer-size polymnie)
+(buffer-size terpsichore)
+
+#+END_SRC
+
+
+
+
+
+**** link to sample directories
+[[file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/][file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/]]
+
+
+
+*** keyboard macro to stop sound
+:PROPERTIES:
+:ID:       94F9064E-DB8E-4897-A6C2-94467527BAED
+:END:
+
+#+BEGIN_SRC elisp :results silent
+(fset 'kill-overtone-from-buffer
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([67108896 67108896 134217788 3 22 14 3 3 21 67108896 12] 0 "%d")) arg)))
+   
+(global-set-key [s-f7] 'kill-overtone-from-buffer)
+
+#+END_SRC
+
+#+BEGIN_SRC elisp :results silent
+;; Keyboard Macro Editor.  Press C-c C-c to finish; press C-x k RET to cancel.
+;; Original keys: 2*C-SPC M-< C-c C-v C-n C-c C-c C-u C-SPC C-l
+
+Command: last-kbd-macro
+Key: none
+
+Macro:
+
+2*C-SPC			;; set-mark-command
+M-<			;; beginning-of-buffer
+C-c C-v C-n		;; org-babel-next-src-block
+C-c C-c C-u
+C-SPC			;; set-mark-command
+C-l			;; recenter-top-bottom
+
+#+END_SRC
+
+
+*** confirm MIDI controller connected
+
+#+BEGIN_SRC clojure :results silent
+(midi-connected-devices)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(event-debug-on)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(event-debug-off)
+#+END_SRC
+
+
+*** define 32 atoms for two sets of channels and CC messages
+:PROPERTIES:
+:ID:       B3DB9C3B-4F2B-40D4-B16C-DF3047C968D9
+:END:
+
+MOVED?? To acatalectic?
+
+[[id:F14EC44C-04DE-4611-B8C0-9D5355536765][control channel atoms aplenty, with accompanying ~on-event~]]
+
+
+*** monitor current state of refs
+:PROPERTIES:
+:ID:       119605DE-9AD4-4818-B921-3E6B76396D6C
+:END:
+#+BEGIN_SRC clojure
+  (list 'Channel-one
+        'KNOBS @cc1-1 @cc2-1 @cc3-1 @cc4-1 @cc5-1 @cc6-1 @cc7-1 @cc8-1
+        'PADS @pad1-1 @pad2-1 @pad3-1 @pad4-1 @pad5-1 @pad6-1 @pad7-1 @pad8-1
+        'Channel-two
+        'KNOBS
+        @cc1-2 @cc2-2 @cc3-2 @cc4-2 @cc5-2 @cc6-2 @cc7-2 @cc8-2
+        'PADS @pad1-2 @pad2-2 @pad3-2 @pad4-2 @pad5-2 @pad6-2 @pad7-2 @pad8-2)
+#+END_SRC
+
+#+RESULTS:
+| Channel-one | KNOBS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | PADS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | Channel-two | KNOBS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | PADS | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+* B level
+
+
+** [#B] define utility and library functions
+
+
+*** record-val (to 'liked-values' ref); my maprange; round2; read-ugen
+
+#+BEGIN_SRC clojure
+  ;; hard codes in ref for "liked-values"
+  (defn record-val [place]
+    (swap! liked-values conj (deref place)))
+
+(defn maprange [[a1 a2] [b1 b2] s]
+	(+ b1 (/ (* (- s a1) (- b2 b1)) (- a2 a1))))
+
+;; in more recent versions of overtone?
+(defn round2
+  "Round a double to the given precision (number of significant digits)"
+  [precision d]
+  (let [factor (Math/pow 10 precision)]
+    (/ (Math/round (* d factor)) factor)))
+
+(defmacro read-ugen [dur ugen]
+`(run ~dur (poll:kr (impulse:kr 2) ~ugen)))
+#+END_SRC
+
+#+RESULTS:
+: #'user/record-val#'user/maprange#'user/read-ugen
+
+
+*** design MIDI interface abstractions and original models of event handlers
+**** event handler pad and knob abstractions
+See [[id:B859EFB9-72F9-405E-9E1F-A0BF75022781][Set four knobs for amp and centerpos across goldberg and yancey]]
+for examples of how to use reset-knob and swap-pad
+
+takes:
+
+- synth :: what active synth are you going to control?
+- synth parameter :: pick a given parameter of the particular synth
+- knob number :: which knob are you using to control?
+- place :: what ref holds the desired values?
+- midi-channel :: send messages from one channel or another
+- scale :: scale the values being sent from the knob
+
+**** old specific event handlers deprecated?
+#+BEGIN_SRC clojure :results silent
+  (defn old-reset-knob [synth synth-param knob-number place midi-channel & {:keys [scale]
+                                                                        :or {scale 1}}]
+      (fn [{knob :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= knob knob-number)
+                (do (reset! place (* val scale))
+                    (ctl synth (keyword synth-param) (deref place))
+                    (println (str synth-param knob-number " : ") (deref place)))))))
+
+  (defn old-swap-pad [synth synth-param pad-number place swap-fn midi-channel]
+      (fn [{pad :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= pad pad-number)
+                (do (swap! place swap-fn)
+                    (ctl synth (keyword synth-param) (deref place))
+                    (println (str synth-param pad-number " : ") (deref place)))))))
+#+END_SRC
+
+
+*** keyboard keys and transport event handlers, with scaling (hard codes synth!)
+:PROPERTIES:
+:ID:       5B64A0AA-C2B5-468A-A39F-4DC5D3EF55D0
+:END:
+**** SAVE VALUES event handler
+:PROPERTIES:
+:ID:       D5F733E4-1698-40FB-8B24-D634FD7B39A5
+:END:
+
+Problems result from using =case= /but not covering all cases!/
+#+BEGIN_SRC clojure
+;; save a "liked value" into storage with "record" button
+;; return list of "liked values" with "play" button
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note vel :velocity}]
+              (case vel
+                127
+                (case cc-channel 
+                  18 (record-val current-val)
+                  17 (println (deref liked-values))
+                  :else nil)
+                0 nil))
+            ::record-value-handler)
+
+#+END_SRC
+**** CHANGE DST-HI RANGE event handler
+#+BEGIN_SRC clojure :results silent
+;; determine maprange's destination high point, thus changing maprange's scale
+  (on-event [:midi :control-change]
+            (fn [{note :note val :velocity}]
+              (cond (= note 2) (do (reset! dst-hi val)
+                                   (println "dst-hi: " @dst-hi))))
+            ::test-range-high)
+
+
+#+END_SRC
+
+#+RESULTS:
+: :added-async-handler:added-async-handler
+**** remove above event handlers
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::record-value-handler)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::test-range-high)
+#+END_SRC
+
+**** example of controlling playback of synth saved in =gold= only!
+
+***** control centerpos with note-on
+#+BEGIN_SRC clojure
+;; determine "centerpos" based on MIDI keyboard notes
+  (on-event [:midi :note-on]
+            (fn [{note :note}]
+              (let [val (deref current-val)]
+                (do (reset! current-val (maprange [60 91] [0.0 @dst-hi] note))
+                    (ctl gold :centerpos val)
+                    (println (round2 val 2)))))
+            ::set-current-val-scale-and-play)
+#+END_SRC
+
+***** control trate with knob 3
+#+BEGIN_SRC clojure :results silent
+;; determine trate 
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 3)
+                    (do (reset! trate-ref vel)
+                        (ctl gold :trate (maprange [0 127] [0.01 2] vel))
+                        (println vel))))
+            ::set-trate-and-play)
+#+END_SRC
+
+***** control dur-numerator with knob 4
+#+BEGIN_SRC clojure :results silent
+;; determine dur-numerator
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 4)
+                    (do (reset! durnumerator-ref vel)
+                        (ctl gold :dur-numerator (maprange [0 127] [1 20] vel))
+                        (println vel))))
+            ::set-durnum-and-play)
+#+END_SRC
+
+
+
+
+
+** overtone abstraction templates GOOD
+
+*** simple CC synth control function--takes any SYNTH as an argument
+- sequence of 
+#+BEGIN_SRC clojure :results silent
+(defn make-synth-ctl [synth midi-channel synth-param]
+  (fn [{cc-channel :note val :velocity chan :channel}]
+    (if (= chan midi-channel)
+      (cond (= cc-channel 1) (do (reset! cc1-1 (* (inc val) @cc5-1))
+                                 (ctl synth (keyword synth-param) @cc1-1)
+                                 (println "cc1-1:" @cc1-1))))))
+
+(on-event [:midi :control-change]
+          (make-synth-ctl slow-grain-reverb 1 'centerpos)
+          :abstraction-cc-synth)
+
+(slow-grain-reverb)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(remove-event-handler ::abstraction-cc-synth)
+#+END_SRC
+
+#+RESULTS:
+: :handler-removed
+
+
+*** simple TGrains variations function--use general-tgrains above
+    args to general-tgrains [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+
+
+*** customize CC synth control for exacting centerpos work
+#+BEGIN_SRC clojure :results silent
+;; copied from above
+  (defn make-synth-ctl [synth midi-channel synth-param]
+    (fn [{cc-channel :note val :velocity chan :channel}]
+      (if (= chan midi-channel)
+        (cond (= cc-channel 1) (do (reset! cc1-1 val)
+                                   (ctl synth (keyword synth-param) @cc1-1)
+                                   (println "cc1-1:" @cc1-1))
+              ))))
+
+  (defn make-synth-ctl-pads [synth midi-channel synth-param]
+    (fn [{cc-channel :note val :velocity chan :channel}]
+      (if (= chan midi-channel)
+        (cond (= cc-channel 40) (do (swap! pad5-1 inc)
+                                   (ctl synth (keyword synth-param) @pad5-1)
+                                   (println "pad5-1:" @pad5-1))
+              ))))
+
+
+
+  (on-event [:midi :control-change]
+            (make-synth-ctl general-tgrains 1 'centerpos)
+            :abstraction-cc-synth)
+
+  (on-event [:midi :note-on]
+            (make-synth-ctl-pads general-tgrains 1 'centerpos)
+            :abstraction-cc-synth-pad)
+
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (general-tgrains 0)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl general-tgrains :centerpos 100)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl general-tgrains :centerpos 1)
+#+END_SRC
+
+
+
+*** full knob and pad abstraction
+:PROPERTIES:
+:ID:       C945047A-E0FD-439C-9354-6F8CA4989DAE
+:END:
+#+BEGIN_SRC clojure
+;;; N.B. passing in the buffer num isn't ideal!
+  (defn reset-knob [synth buffer-num synth-param knob-number place midi-channel & {:keys [scale]
+                                                                        :or {scale 1}}]
+      (fn [{knob :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= knob knob-number)
+                (do (reset! place (* val scale))
+                    (ctl synth (keyword buffer) buffer-num (keyword synth-param) (deref place))
+                    (println (str synth-param knob-number " : ") (deref place)))))))
+
+#+END_SRC
+
+#+RESULTS:
+: #'user/reset-knob
+
+#+BEGIN_SRC clojure
+;;; N.B. passing in the buffer num isn't ideal!
+  (defn swap-pad [synth buffer-num synth-param pad-number place swap-fn midi-channel]
+      (fn [{pad :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= pad pad-number)
+                (do (swap! place swap-fn)
+                    (ctl synth (keyword buffer) buffer-num (keyword synth-param) (deref place))
+                    (println (str synth-param pad-number " : ") (deref place)))))))
+    
+#+END_SRC
+
+#+RESULTS:
+: #'user/swap-pad
+
+
+*** play goldberg with general-tgrains granular synth
+:PROPERTIES:
+:ID:       AD3B833A-363B-410D-A18E-348F8D7D4182
+:END:
+#+BEGIN_SRC clojure :results silent
+(general-tgrains 0)
+#+END_SRC
+
+
+*** play yancey
+:PROPERTIES:
+:ID:       44B87F5F-FCA4-4451-A91C-A2DCD2F9F714
+:END:
+#+BEGIN_SRC clojure :results silent
+(general-tgrains 1)
+#+END_SRC
+
+
+
+*** [#C] use "reset-knob" and "swap-pad" to control "general-tgrains"
+   :PROPERTIES:
+   :ID:       A2DF787F-8A56-4C27-A637-257E7B32DE58
+   :END:
+
+
+WHAT IF GENERAL-TGRAINS is /not running?/
+
+
+this says: 
+control the "centerpos" argument of the "general-tgrains" synth using
+"knob 1" (which uses the "cc1-1" var to hold its current state) when
+it is being controlled on channel 1
+
+But needs an event handler to actually respond to cc-messages! see
+"on-events" below
+
+#+BEGIN_SRC clojure :results silent
+;; note that we are passing single numbers to the synth-parameters arguments
+;; ideally, we will get these values automatically from "state"
+(reset-knob general-tgrains :centerpos 1 cc1-1 1)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(reset-knob general-tgrains :centerpos 1 cc1-1 1)
+(swap-pad general-tgrains :centerpos 36 pad1-1 inc 1)
+(swap-pad general-tgrains :centerpos 37 pad2-1 dec 1)
+#+END_SRC
+
+
+
+*** [#B] create event-handlers for general-tgrains
+   :PROPERTIES:
+   :ID:       B9D96AE8-B82E-4C20-BB93-AE27E6232D53
+   :END:
+
+**** define control-change knobs 
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (reset-knob general-tgrains :buffer 0 :amp 2 cc2-1 1 :scale 0.01)
+            ::amp-knob2)
+
+  (on-event [:midi :control-change]
+            (reset-knob general-tgrains :buffer 0 :centerpos 1 cc1-1 1 :scale 0.5)
+            ::centerpos-knob1)
+#+END_SRC
+
+**** define pads
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :centerpos 38 pad3-1 inc 1)
+            ::centerpos-pad3-inc)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :centerpos 39 pad3-1 dec 1)
+            ::centerpos-pad4-dec)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :dur-numerator 36 pad1-1 inc 1)
+            ::durnumerator-pad1)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :dur-numerator 37 pad1-1 dec 1)
+            ::durnumerator-pad2)
+
+(on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :trate 42 pad7-1 (fn [x] (+ 0.1 x)) 1)
+            ::trate-pad7-inc)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 0 :trate 43 pad7-1 (fn [x] (- x 0.1)) 1)
+            ::trate-pad8-dec)
+#+END_SRC
+
+**** remove event handlers for goldberg
+
+#+BEGIN_SRC clojure
+(remove-event-handler ::amp-knob2)
+(remove-event-handler ::centerpos-knob1)
+(remove-event-handler ::centerpos-pad3-inc)
+(remove-event-handler ::centerpos-pad4-dec)
+(remove-event-handler ::durnumerator-pad1)
+(remove-event-handler ::durnumerator-pad2)
+(remove-event-handler ::trate-pad7-inc)
+(remove-event-handler ::trate-pad8-dec)
+#+END_SRC
+
+#+RESULTS:
+: :handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed
+
+* contains atoms
+** [#B] define refs (for full composing with high-level granular synth)
+:PROPERTIES:
+:ID:       EEC0B1AC-D5F4-40F8-ACDF-629441E38812
+:END:
+These refs are used by...which event handlers???
+
+
+*** all refs in one block
+
+#+BEGIN_SRC clojure :results silent
+;;; save "centerpos" values
+  (def liked-values (atom []))
+
+;;; use current-val to hold current 'centerpos' value
+  (def current-val (atom 0))
+
+;;; use cc knob to change high point of maprange destination value
+  (def dst-lo (atom 0.01))
+
+  (def dst-hi (atom 1))
+
+;;; determine trate value
+  (def trate-ref (atom 1))
+
+;;; determine dur-numerator for tgrains duration
+  (def durnumerator-ref (atom 8))
+#+END_SRC
+
+
+*** break down of refs
+- liked-values :: save =centerpos= values
+- current-val :: holds current =centerpos= value
+- dst-hi :: set endpoint of maprange value (for fine grain control
+     with keyboard centerpos triggering
+- trate-ref :: set rate of trigger of grains
+- durnumerator-ref :: 
+* improve abstraction for cc event handling
+   :PROPERTIES:
+   :DATE_CREATED: [2017-03-01 Wed 10:00]
+   :END:
+** simple example of using noisy synth with 8 parameters and CC event handler
+eight parameters for Axiom target ranges
+You can set the values for high and low based on the desired ranges
+you need for a given ugen that will scale within these ranges
+
+*** def atoms
+#+BEGIN_SRC clojure :results silent
+(def cc0-1-lo (atom 100))
+(def cc0-1-hi (atom 1000))
+(def cc0-2-lo (atom 1))
+(def cc0-2-hi (atom 30))
+(def cc0-3-lo (atom 0.1))
+(def cc0-3-hi (atom 1))
+(def cc0-4-lo (atom 0.1))
+(def cc0-4-hi (atom 1000))
+
+
+#+END_SRC
+
+
+*** def noise-sine "ring-bank" synth
+#+BEGIN_SRC clojure :results silent
+(defsynth ring-bank [cc0-1 200 cc0-2 20 cc0-3 1] (out 0 (pan2 (* cc0-3 (ring3 (sin-osc cc0-1) (lf-noise0:kr cc0-2))))))
+#+END_SRC
+
+*** create instance of ring-bank
+#+BEGIN_SRC clojure :results silent
+(def rb (ring-bank))
+#+END_SRC
+
+*** ctl ring-bank instance
+#+BEGIN_SRC clojure :results silent
+(ctl rb :cc0-1 330)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl rb :cc0-2 10)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl rb :cc0-3 0.2)
+#+END_SRC
+*** create instance of eventer-handler for ring-bank
+
+#+BEGIN_SRC clojure :results silent
+(cc-active-synth-abstraction rb ::rb-handler)
+;; (def handler1 (cc-rate-active-synth-abstraction rb))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::rb-handler)
+#+END_SRC
+** use brown-noise filter with longer ref names
+*** consider (create) new lo-hi cc names
+     :PROPERTIES:
+     :ID:       8782BB3C-2F55-4D1E-90A8-8EE70F8A933F
+     :END:
+
+#+NAME: instrument1-highs-and-lows
+#+BEGIN_SRC clojure :results silent
+(def instrument1-cc0-1-lo (atom 0.1))
+(def instrument1-cc0-1-hi (atom 100))
+(def instrument1-cc0-2-lo (atom 1))
+(def instrument1-cc0-2-hi (atom 30))
+(def instrument1-cc0-3-lo (atom 0.1))
+(def instrument1-cc0-3-hi (atom 1))
+(def instrument1-cc0-4-lo (atom 0.1))
+(def instrument1-cc0-4-hi (atom 1000))
+
+
+#+END_SRC
+*** define and create synth
+ #+BEGIN_SRC clojure :results silent
+ (defsynth reson-noise [cc0-1 1000 cc0-2 1.0 cc0-3 0.1] (out 0 (pan2 (* cc0-3 (resonz (brown-noise) cc0-1 cc0-2)))))
+
+ (def filterable-background (reson-noise))
+ #+END_SRC
+
+
+*** give long list of hi-lo scale-range arguments 
+ #+BEGIN_SRC clojure :results silent
+ (cc-active-synth-abstraction-reset-args filterable-background 100 1000 0.5 10 500 2000 10 50 ::considerable-noise-event-handler)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (remove-event-handler ::considerable-noise-event-handler)
+ #+END_SRC
+
+
+
+
+** rescaling atoms with the minilogue
+*** developing
+     :PROPERTIES:
+     :DATE_CREATED: [2017-03-03 Fri 17:55]
+     :END:
+
+(+ range offset)
+ where range can be 1 10 100 1000
+and offset can be 1-127 or 10-1270 100-12700
+
+#+BEGIN_SRC clojure :results silent
+16 (reset! cc0-1-range-scale-ones (* 1 vel))
+17 (reset! cc0-1-range-scale-tens (* 10 vel))
+18 (reset! cc0-1-range-scale-hundreds (* 100 vel))
+;; 19 (reset! cc0-1-range-scale-thousands (* 1000 vel))
+20 (reset! cc0-1-range-offset (* cc0-1-range-scale vel))
+21 (reset! cc0-1-range-offset (* 10 vel))
+22 (reset! cc0-1-range-offset (* 100 vel))
+23 (reset! cc0-1-range-offset (* 1000 vel))
+
+(scale-range vel 1 127 @offset (+ @offset (+ @ones @tens @hundreds)))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(def ones (atom 0))
+(def tens (atom 0))
+(def hundreds (atom 0)) 
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def offset (atom 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
+       (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
+       (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
+       (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds)))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
+       (reset! offset (+ @offset-ones @offset-tens @offset-hundreds)))
+17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
+       (reset! offset (+ @offset-ones @offset-tens @offset-hundreds)))
+18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
+       (reset! offset (+ @offset-ones @offset-tens @offset-hundreds)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+34 (test synth :cc0-34 @offset (+ @offset @ranger))
+#+END_SRC
+*** defining
+     :PROPERTIES:
+     :DATE_CREATED: [2017-03-04 Sat 15:30]
+     :END:
+
+**** explanation
+
+Using macro defined previously, create a large event-handler for the
+minilogue that uses two sets of knobs to dynamically reset both the
+produced value of a knob and the arguments to scale-range that
+determine those outputs.
+
+Better reporting could be used, as it was hard enough to tell whether
+or how it was working that I had to use a non-granular synth to check
+what was happening.
+
+**** define macro from above
+
+C-c C-v g to go to the following block
+(can't evaluate a macro from a remote block?)
+
+Eliminate the explicit call tag for export purposes:
+
+cc-knob-scale-range-macro(active-synth cc-knob tar-lo tar-hi vel)
+
+**** refs needed for this scaling function
+#+BEGIN_SRC clojure :results silent
+(def offset-ones (atom 0))
+(def offset-tens (atom 0))
+(def offset-hundreds (atom 0)) 
+(def ranger-ones (atom 0))
+(def ranger-tens (atom 0))
+(def ranger-hundreds (atom 0)) 
+(def offset (atom 1))
+(def ranger (atom 1))
+#+END_SRC
+
+
+**** create synths
+
+See granular synth defined for minilogue cc knobs
+[[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
+
+#+CALL: minirand-ccgrain-no-line()
+
+#+BEGIN_SRC clojure :results silent
+(def mini-obsessive (minirand-ccgrain-no-line 3))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (cc-minilogue1-grains mini-obsessive ::obess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(mini-scaling-test mini-obsessive ::mini-obsess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::mini-obsess)
+;; (remove-event-handler ::obess)
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(defsynth mini-filterable-synth
+  [cc34 1
+   cc35 1
+   cc36 200]
+  (out 0 (pan2 (* cc34 (resonz (brown-noise) cc36 cc35)))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+ (def filterable-synth (mini-filterable-synth))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(mini-scaling-test filterable-synth ::mini-filt)
+#+END_SRC
+
+#+NAME: call-me-remote
+#+begin_SRC clojure
+(rand)
+#+END_SRC
+
+#+RESULTS: call-me-remote
+: 0.9825551664091691
+
+#+CALL: call-me-remote()
+
+#+RESULTS:
+: 0.3852873461500559
+
+* [#A] use pads for moving by samples
+   :PROPERTIES:
+   :DATE_CREATED: [2017-03-11 Sat 21:40]
+   :ID:       69B98513-C3EE-4FEC-B098-125003233367
+   :END:
+
+** two centerpos atoms for two tracks
+#+NAME: def-centerpos-refs
+#+BEGIN_SRC clojure :results silent
+(def centerpos1 (atom 0))
+(def centerpos2 (atom 0))
+#+END_SRC
+
+** set =centerpos= ref for two synths with pads 36-43
+#+NAME: pad-swapping-event-handler
+#+BEGIN_SRC clojure :results silent
+;; (defn swap-centerpos-pad [active-synth1 active-synth2]
+;;   (fn [{pad :note}]
+;;     (case pad
+;;       36 (do (swap! centerpos1 #(- % 0.01)) (ctl active-synth1 :centerpos @centerpos1))
+;;       37 (do (swap! centerpos1 #(- % 0.1)) (ctl active-synth1 :centerpos @centerpos1))
+;;       38 (do (swap! centerpos2 #(- % 0.01)) (ctl active-synth2 :centerpos @centerpos2))
+;;       39 (do (swap! centerpos2 #(- % 0.1)) (ctl active-synth2 :centerpos @centerpos2))
+;;       40 (do (swap! centerpos1 #(+ % 0.01)) (ctl active-synth1 :centerpos @centerpos1))
+;;       41 (do (swap! centerpos1 #(+ % 0.1)) (ctl active-synth1 :centerpos @centerpos1))
+;;       42 (do (swap! centerpos2 #(+ % 0.01)) (ctl active-synth2 :centerpos @centerpos2))
+;;       43 (do (swap! centerpos2 #(+ % 0.1)) (ctl active-synth2 :centerpos @centerpos2)))))
+#+END_SRC
+
+** granular synth with 6 parameters
+#+NAME: no-line-granular-synth
+#+BEGIN_SRC clojure :results silent
+  (defsynth yancey-gran-synth-experimen
+    [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0 trand 0.01]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:kr trate)
+          centerpos (+ centerpos (t-rand:kr 0 trand clk))]
+      (out 0 (pan2 
+              (t-grains:ar 1 clk buffer 1
+                           centerpos dur 
+                           0 amp 2 )))))
+#+END_SRC
+
+** instantiate granular synths for yancey and goldberg
+#+NAME: yancey-line-syn
+#+BEGIN_SRC clojure :results silent
+(def yancey-noline (yancey-gran-synth-experimen yancey))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def goldberg-noline (yancey-gran-synth-experimen goldberg-slow))
+#+END_SRC
+
+** use pads to control centerpos of yancey and goldberg
+
+#+BEGIN_SRC clojure :results silent
+;; (on-event [:midi :note-on]
+;;           (swap-centerpos-pad yancey-noline goldberg-noline)
+;;           ::pad-control-yancey-centerpos)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (remove-event-handler ::pad-control-yancey-centerpos)
+#+END_SRC
+
+** set ranges for knobs to be used with two synths
+
+#+BEGIN_SRC clojure :results silent
+;; yancey
+(defn knob1-fn [vel] (scale-range vel 1 127 0.01 1)) ; trate
+(defn knob2-fn [vel] (scale-range vel 1 127 0.5 24 )) ; dur-numerator
+(defn knob5-fn [vel] (scale-range vel 1 127 0 2 ))    ; amp
+(defn knob6-fn [vel] (scale-range vel 1 127 0.001 1 ))    ; trand
+
+
+;; goldberg
+(defn knob3-fn [vel] (scale-range vel 1 127 0.1 2 )) ; trate
+(defn knob4-fn [vel] (scale-range vel 1 127 0.5 24 )) ; dur-numerator
+(defn knob7-fn [vel] (scale-range vel 1 127 0 2 ))    ; amp
+(defn knob8-fn [vel] (scale-range vel 1 127 0.001 1 ))    ; trand
+#+END_SRC
+
+
+** instantiate the knob event handler for yancey and goldberg
+#+BEGIN_SRC clojure :results silent
+(granular-synth-non-centerpos-handler yancey-noline goldberg-noline ::yancey-goldberg-redux)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (remove-event-handler ::yancey-goldberg-redux)
+#+END_SRC
+* configure your whole MIDI controller
+  :PROPERTIES:
+  :ID:       0DDA001F-5EAC-4E8F-A1D0-16EEDBF8F828
+  :END:
+
+** axiom 8 cc knobs
+**** prepare incarnation samples
+ #+CALL: load-incarnation-samples()
+ #+CALL: play()
+ #+CALL: play-yancey-straight()
+
+**** Yancey cc-knob functions (used by simple8)
+#+BEGIN_SRC clojure :results silent
+(defn cc-one [active-synth vel] (ctl active-synth :trate (scale-range vel 1 127 0.1 10)))
+(defn cc-two [active-synth vel] (ctl active-synth :dur-numerator (scale-range vel 1 127 0.1 24)))
+(defn cc-three [active-synth vel] (ctl active-synth :centerpos (scale-range vel 1 127 0 272)))
+(defn cc-four [active-synth vel] (ctl active-synth :amp (scale-range vel 1 127 0 1)))
+#+END_SRC
+
+#+RESULTS:
+: #'user/cc-one#'user/cc-two#'user/cc-three#'user/cc-four
+
+**** Goldberg cc-knob functions (used by simple8)
+#+BEGIN_SRC clojure :results silent
+
+(defn cc-five [active-synth vel] (ctl active-synth :trate (scale-range vel 1 127 0.1 10)))
+(defn cc-six [active-synth vel] (ctl active-synth :dur-numerator (scale-range vel 1 127 0.1 24)))
+(defn cc-seven [active-synth vel] (ctl active-synth :centerpos (scale-range vel 1 127 0 184)))
+(defn cc-eight [active-synth vel] (ctl active-synth :amp (scale-range vel 1 127 0 1)))
+
+#+END_SRC
+
+#+RESULTS:
+: #'user/cc-five#'user/cc-six#'user/cc-seven#'user/cc-eight
+
+
+**** define granular synth with 6 params (no line)
+
+calculates track length but doesn't use it?
+
+#+BEGIN_SRC clojure :results silent
+ (defsynth axiom-ccgrain-no-line
+   "Summary of arglist: buffer; trate; amp; centerpos..."
+   [buffer 0 
+    trate 1
+    dur-numerator 12 
+    centerpos 0
+    amp 0.8
+    trand 0.01]
+   (let [trate trate ;;(mouse-y:kr 0.5 20)
+         track-len (buf-dur:kr buffer)
+         dur (/ dur-numerator trate)
+         clk (impulse:kr trate)
+         line-centerpos (+ centerpos (t-rand:kr 0 trand clk))
+         ]
+     (out 0 (pan2 
+             (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
+                          line-centerpos dur
+                          0 amp 2)))))
+
+
+#+END_SRC
+
+**** instantiate above synths for yancey and goldberg files
+#+BEGIN_SRC clojure :results silent
+(def yancey-axiom (axiom-ccgrain-no-line yancey))
+(def goldberg-axiom (axiom-ccgrain-no-line goldberg-slow))
+#+END_SRC
+
+**** create event handler for yancey-goldberg synths
+#+BEGIN_SRC clojure :results silent
+(simple8-drop-in-event-handler yancey-axiom goldberg-axiom ::gold-yancey-mix)
+#+END_SRC
+
+
+** use "sample number" to move through centerpos values
+#+BEGIN_SRC clojure :results silent
+(defn swap-centerpos-in-samples-pad [active-synth1 active-synth2]
+  (fn [{pad :note}]
+    (case pad
+      36 (do (swap! centerpos1 #(- % 100)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      37 (do (swap! centerpos1 #(- % 1000)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      38 (do (swap! centerpos2 #(- % 100)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      39 (do (swap! centerpos2 #(- % 1000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      40 (do (swap! centerpos1 #(+ % 100)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      41 (do (swap! centerpos1 #(+ % 1000)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      42 (do (swap! centerpos2 #(+ % 1000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      43 (do (swap! centerpos2 #(+ % 10000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100))))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(on-event [:midi :note-on]
+          (swap-centerpos-in-samples-pad yancey-noline goldberg-noline)
+          ::pad-control-yancey-centerpos-in-samples)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (remove-event-handler ::pad-control-yancey-centerpos-in-samples)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(list @centerpos1 @centerpos2)
+#+END_SRC
+
+#+RESULTS:
+| 71300 | 7323600.1 |
+
+* contains definst
+** use mousex and y for non-MIDI controller interaction 
+- Load up overtone and apollo samples
+
+This uses mouse-x to change centerpos, which suggests you are actively
+moving with a mouse (most convenient when working as laptop using
+trackpad)
+
+Note, these are DEFINST
+#+BEGIN_SRC clojure :results output
+(definst grainy-ctl-mousex [b 0 trate 1 amp 0.8]
+  (let [trate trate
+        dur (/ 2 trate)]
+    (t-grains:ar 1 (impulse:ar trate) b 1 ;; mouse-x (no line/random)
+                 (mouse-x:kr 0 (buf-dur:kr b)) dur
+                 0 amp 2)))
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC clojure :results silent
+(def viol1 (grainy-ctl-mousex :b 1 :trate 0.25))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(ctl grainy-ctl-mousex :trate 0.5)
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results output
+  (definst mouse-grain-y [b 0 trate-mousey-min 1  dur-numerator 2]
+    (let [trate (mouse-y:kr trate-mousey-min 16)
+          dur (/ dur-numerator trate)]
+      (t-grains:ar 1 (impulse:ar trate) b 1 ;; mouse x/y (no line/random)
+                   (mouse-x:kr 0 (buf-dur:kr b)) dur 
+                   0 0.8 2)))
+
+
+
+#+END_SRC
+
+#+RESULTS:
+: Sending:  /g_new [47 1 31]
+: Sending:  /sync [25]
+: Sending:  /g_new [48 0 47]
+: Sending:  /sync [26]
+: Sending:  /g_new [49 1 47]
+: Sending:  /sync [27]
+: Sending:  /s_new [overtone.stu547/mono-inst-mixer 50 1 47 in-bus 18.0 out-bus 0.0 volume 1.0 pan 0.0]
+
+: Sending:  /sync [28]
+
+#+BEGIN_SRC clojure :results silent
+  (mouse-grain-y 2 :dur-numerator 4)
+
+;;  (ctl mouse-grain-y 2 :dur-numerator 2)
+#+END_SRC
+It would be nice to also have a way to mostly automate listening
+behind the scenes with lines as centerpos and small mouse-x changes
+for some parameter variation
+** post show synth controlling
+*** large cider-scratch with midi-poly-players
+    :PROPERTIES:
+    :DATE_CREATED: [2017-03-27 Mon 21:40]
+    :END:
+
+What is this taken from?
+    
+#+BEGIN_SRC clojure
+;; This buffer is for Clojure experiments and evaluation.
+;; Press C-j to evaluate the last expression.
+
+(demo 5 (* (rlpf  (brown-noise) (* 100 (+ 20 (rand-int 10))) (+ 0.7 (rand)))
+           (env-gen (lin 0.01 2 0.01) 1 1 0 0.5)))
+
+(definst envs "none" [envelope-rel 1 note 60 velocity 100]
+  (* (rlpf (brown-noise) 1000 0.5)
+     (env-gen (lin 0.01 2 envelope-rel) 1 1 0 0.5)))
+
+(envs)
+
+(def noiser (midi-poly-player envs))
+
+(definst kush [note 60 amp 0.3]
+  (let [freq (midicps note)]
+    (* amp (rlpf (brown-noise) freq))))
+
+(kush)
+
+(on-event [:midi :note-on]
+          (fn [e]
+            (let [note (:note e)
+                  vel  (:velocity e)]
+              (kush note (* 0.01 vel))))
+          ::kush-on)
+
+(stop)
+
+(on-event [:midi :note-off]
+          (fn [e]
+            (let [vel (:velocity e)]
+              (kush note 0)))
+          ::kush-off)
+
+(remove-event-handler ::kush-off)
+(remove-event-handler ::kush-on)
+
+(definst noise-drum [note 60 amp 0.8]
+  (let [freq (midicps note)
+        amp amp
+        snd (rlpf (brown-noise) (* 100 (+ 20 (rand-int 10))) (+ 0.7 (rand)))
+        env (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+    (* amp snd env)))
+
+    (definst kush2
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (rlpf  (brown-noise) (* 100 (+ 20 (rand-int 10))) (+ 0.7 (rand)))
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+
+(def noise-drummer (midi-poly-player noise-drum))
+
+(midi-player-stop noise-drummer)
+
+(midi-player-stop noise-drummer2)
+
+
+
+
+(def noise-drummer2 (midi-poly-player kush2))
+
+(definst ding
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (sin-osc freq)
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+(def dinger (midi-poly-player ding :dinger01))
+
+(midi-player-stop :dinger01)
+
+
+;; (remove-event-handler (:on-key dinger))
+;; (remove-event-handler (:off-key dinger))
+
+
+    (definst kush2
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (rlpf (brown-noise) freq (+ 0.7 (rand)))
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+(def kusher2 (midi-poly-player kush2 :kusher2))
+
+(midi-player-stop :kusher2)
+
+(definst saw2
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (bpf (saw freq))
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+(def sawer (midi-poly-player saw2 :sawer))
+
+(midi-player-stop :sawer)
+
+(definst saw3
+      [note 60 velocity 100 gate 1 cfreq 440]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (bpf (saw freq cfreq))
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+(def sawer (midi-poly-player saw2 :sawer))
+
+(midi-player-stop :sawer)
+
+(def ding-mapping
+    {1 [:attack     #(* 0.3 (/ % 127.0))]
+     2 [:decay      #(* 0.6 (/ % 127.0))]
+     3 [:sustain    #(/ % 127.0)]
+     4 [:release    #(/ % 127.0)]})
+
+(def ding-state (atom {}))
+
+(midi-inst-controller ding-state (partial ctl ding2) ding-mapping)
+
+
+(definst ding2
+      [note 60 velocity 100 gate 1 attack 0.001 decay 0.1 sustain 0.6 release 0.3]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (sin-osc freq)
+            env (env-gen (adsr attack decay sustain release) gate :action FREE)
+            ]
+        (* amp env snd)))
+
+(demo 10 (sin-osc (+ 1000 (* 600 (lf-noise0:kr 1))) 0.3))
+
+(definst beep [note 60 velocity 100 gate 1 param1 1000 param2 600 param3 12 param4 0.3]
+  (let [freq (midicps note)
+        amp (/ velocity 127.0)
+        snd (sin-osc (+ freq param1 (* param2 (lf-noise0:kr param3))) param4)
+        env (env-gen (adsr 1 1 1 1) gate :action FREE)]
+    (* amp snd env)))
+
+(def beeper (beep))
+
+(kill beeper)
+    
+
+(def dinger1 (midi-poly-player ding2 :dinger1))
+(midi-player-stop :dinger1)
+
+(def dinger2 (my-midi-poly-player ding2 :dinger2))
+
+(def beeper1 (my-midi-poly-player beep :beeper1))
+
+(def beep-mapping
+    {1 [:param1     #(* 2000 (/ % 127.0))]
+     2 [:param2     #(* 1200 (/ % 127.0))]
+     3 [:param3    #(* 36 (/ % 127.0))]
+     4 [:param4    #(/ % 127.0)]})
+
+(def beep-state (atom {}))
+
+(def beeper2 (my-midi-poly-player beep :beeper1))
+
+(definst beep2 [note 60 velocity 100 gate 1 param1 1000 param2 600 param3 12 param4 0.3]
+  (let [freq (midicps note)
+        amp (/ velocity 127.0)
+        snd (sin-osc (+ freq param1 (* param2 (lf-noise0:kr param3))) param4)
+        env (env-gen (adsr 1 1 1 1) gate :action FREE)]
+    (* amp snd env)))
+
+(midi-inst-controller beep-state (partial ctl beeper1) beep-mapping)
+
+;; doesn't work?
+(midi-player-stop :dinger2)
+
+;; works?
+(remove-event-handler (:on-key dinger2))
+(remove-event-handler (:off-key dinger2))
+
+;; (remove-event-handler (:off-key dinger))
+(midi-player-stop :user/midi-poly-player)
+
+(ding2)
+
+(ctl ding2 :velocity 0)
+
+(defn my-midi-poly-player
+  "Sets up the event handlers and manages synth instances to easily play
+  a polyphonic instrument with a midi controller.  The play-fn should
+  take the note and velocity as the only two arguments, and the synth
+  should have a gate parameter that can be set to zero when a :note-off
+  event is received.
+
+    (definst ding
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (sin-osc freq)
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+    (def dinger (midi-poly-player ding))
+  "
+  ([play-fn] (my-midi-poly-player play-fn ::midi-poly-player))
+  ([play-fn player-key] (my-midi-poly-player play-fn [:midi] player-key))
+  ([play-fn device-key player-key]
+     (let [notes*        (atom {})
+           on-event-key  (concat device-key [:note-on])
+           off-event-key (concat device-key [:note-off])
+           on-key        (concat [::midi-poly-player] on-event-key)
+           off-key       (concat [::midi-poly-player] off-event-key)]
+       (on-event on-event-key (fn [{note :note velocity :velocity}]
+                                (let [amp (float (/ velocity 127))
+                                      attack 1
+                                      decay 1
+                                      sustain 1
+                                      release 1]
+                                    (swap! notes* assoc note
+                                           (play-fn :note note :amp amp :velocity velocity :attack attack :decay decay :sustain sustain :release release))))
+                   on-key)
+
+       (on-event off-event-key (fn [{note :note velocity :velocity}]
+                                   (let [velocity (float (/ velocity 127 ))]
+                                     (when-let [n (get @notes* note)]
+                                       (with-inactive-node-modification-error :silent
+                                         (node-control n [:gate 0 :after-touch velocity]))
+                                       (swap! notes* dissoc note))))
+                   off-key)
+
+       ;; TODO listen for '/n_end' event for nodes that free themselves
+       ;; before recieving a note-off message.
+       (let [player (with-meta {:notes* notes*
+                                :on-key on-key
+                                :off-key off-key
+                                :device-key device-key
+                                :player-key player-key
+                                :playing? (atom true)}
+                      {:type ::midi-poly-player})]
+         (swap! poly-players* assoc player-key player)
+         player))))
+
+
+#+END_SRC
+** beeper tests
+*** first beep
+#+BEGIN_SRC clojure
+(definst beep [note 60 velocity 100 gate 1 param1 1000 param2 600 param3 12 param4 0.3]
+  (let [freq (midicps note)
+        amp (/ velocity 127.0)
+        snd (sin-osc (+ freq param1 (* param2 (lf-noise0:kr param3))) param4)
+        env (env-gen (adsr 1 1 1 1) gate :action FREE)]
+    (* amp snd env)))
+
+(def beep-mapping
+    {1 [:param1     #(* 2000 (/ % 127.0))]
+     2 [:param2     #(* 1200 (/ % 127.0))]
+     3 [:param3    #(* 36 (/ % 127.0))]
+     4 [:param4    #(/ % 127.0)]})
+
+(def beep-state (atom {}))
+
+(def beep-state (atom {:param1 1000 :param2 600 :param3 12 :param4 1}))
+
+(def beeper1 (my-midi-polysynth-player beep :beeper1))
+
+(def beeper3 (my-midi-polysynth-player (partial beep :param1 100) :beeper3))
+
+(def beeper4 (my-midi-polysynth-player (partial beep :param1 @beep-param1) :beeper4))
+
+(my-midi-inst-controller beep-state (partial ctl beep) beep-mapping)
+
+;; must keep track of gensym manually?!
+(remove-event-handler :control-change25616)
+
+(remove-event-handler (:on-key beeper1))
+(remove-event-handler (:off-key beeper1))
+
+(remove-event-handler (:on-key beeper3))
+(remove-event-handler (:off-key beeper3))
+
+(midi-player-stop beeper4)
+
+@poly-players*
+{:beeper1 {:notes* #atom[{} 0x5222bfd8], :on-key (:user/midi-poly-player :midi :note-on), :off-key (:user/midi-poly-player :midi :note-off), :device-key [:midi], :player-key :beeper1, :playing? #atom[true 0x5a38412c]}, :beeper3 {:notes* #atom[{} 0x2a69eca6], :on-key (:user/midi-poly-player :midi :note-on), :off-key (:user/midi-poly-player :midi :note-off), :device-key [:midi], :player-key :beeper3, :playing? #atom[true 0xbb6b3b2]}, :beeper4 {:notes* #atom[{} 0x4cad1163], :on-key (:user/midi-poly-player :midi :note-on), :off-key (:user/midi-poly-player :midi :note-off), :device-key [:midi], :player-key :beeper4, :playing? #atom[true 0x540418fb]}}
+
+(remove-event-handler (:on-key beeper4))
+(remove-event-handler (:off-key beeper4))
+
+(def beep-param1 (atom 1000))
+
+(reset! beep-param1 100)
+
+@beep-param1
+
+#+END_SRC
+*** my- library functions (dependencies)
+#+BEGIN_SRC clojure :results silent
+(defn my-midi-polysynth-player
+  "Sets up the event handlers and manages synth instances to easily play
+  a polyphonic instrument with a midi controller.  The play-fn should
+  take the note and velocity as the only two arguments, and the synth
+  should have a gate parameter that can be set to zero when a :note-off
+  event is received.
+
+    (definst ding
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (sin-osc freq)
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+    (def dinger (midi-poly-player ding))
+  "
+  ([play-fn] (my-midi-polysynth-player play-fn ::midi-poly-player))
+  ([play-fn player-key] (my-midi-polysynth-player play-fn [:midi] player-key))
+  ([play-fn device-key player-key]
+     (let [notes*        (atom {})
+           on-event-key  (concat device-key [:note-on])
+           off-event-key (concat device-key [:note-off])
+           on-key        (concat [::midi-poly-player] on-event-key)
+           off-key       (concat [::midi-poly-player] off-event-key)]
+       (on-event on-event-key (fn [{note :note velocity :velocity}]
+                                (let [amp (float (/ velocity 127))]
+                                  (swap! notes* assoc note
+                                         (play-fn :note note :amp amp :velocity velocity))))
+                   on-key)
+
+       (on-event off-event-key (fn [{note :note velocity :velocity}]
+                                   (let [velocity (float (/ velocity 127 ))]
+                                     (when-let [n (get @notes* note)]
+                                       (with-inactive-node-modification-error :silent
+                                         (node-control n [:gate 0 :after-touch velocity]))
+                                       (swap! notes* dissoc note))))
+                   off-key)
+
+       ;; TODO listen for '/n_end' event for nodes that free themselves
+       ;; before recieving a note-off message.
+       (let [player (with-meta {:notes* notes*
+                                :on-key on-key
+                                :off-key off-key
+                                :device-key device-key
+                                :player-key player-key
+                                :playing? (atom true)}
+                      {:type ::midi-poly-player})]
+         (swap! poly-players* assoc player-key player)
+         player))))
+
+(defn my-midi-inst-controller
+  "Create a midi instrument controller for manipulating the parameters of an instrument
+  using an external device.  Requires an atom to store the state of the parameters, a
+  handler that will be called each time a parameter is modified, and a mapping table to
+  specify how midi control messages should manipulate the parameters.
+
+  (def ding-mapping
+    {22 [:attack     #(* 0.3 (/ % 127.0))]
+     23 [:decay      #(* 0.6 (/ % 127.0))]
+     24 [:sustain    #(/ % 127.0)]
+     25 [:release    #(/ % 127.0)]})
+
+  (def ding-state (atom {}))
+
+  (midi-inst-controller ding-state (partial ctl ding) ding-mapping)
+  "
+  [state-atom handler mapping]
+  (let [ctl-key (keyword (gensym 'control-change))
+        _ (println ctl-key)]
+    (on-event [:midi :control-change]
+              #(my-midi-control-handler state-atom handler mapping %)
+              ctl-key)))
+
+(defn my-midi-control-handler
+  [state-atom handler mapping msg]
+  (let [note (:note msg)]
+    (when (contains? mapping note)
+      (let [[ctl-name scale-fn] (get mapping note)
+            ctl-val (scale-fn (:velocity msg))]
+        (swap! state-atom assoc ctl-name ctl-val)
+        (handler ctl-name ctl-val)))))
+#+END_SRC
+*** contort existing midi.clj example?
+#+BEGIN_SRC clojure :results silent
+(definst ding
+      [note 60 velocity 100 gate 1]
+      (let [freq (midicps note)
+            amp  (/ velocity 127.0)
+            snd  (sin-osc freq)
+            env  (env-gen (adsr 0.001 0.1 0.6 0.3) gate :action FREE)]
+        (* amp env snd)))
+
+;; (def dinger (midi-poly-player ding))
+
+  (def ding-mapping
+    {5 [:attack     #(* 0.3 (/ % 127.0))]
+     6 [:decay      #(* 0.6 (/ % 127.0))]
+     7 [:sustain    #(/ % 127.0)]
+     8 [:release    #(/ % 127.0)]})
+
+(def ding-state (atom {}))
+
+
+;; DO NOT EVALUATE!
+;; leaves ya hanging when ya kill ya synth!
+;; my-midi-inst-controller prints out the gensym needed to remove!
+(midi-inst-controller ding-state (partial ctl ding) ding-mapping)
+
+
+#+END_SRC
+** using cc refs
+*** define control change "Hi-lo" atoms for scale range
+ #+BEGIN_SRC clojure
+   (def cc0-1-lo (atom 0.1))
+   (reset! cc0-1-lo 0.1)
+   (reset! cc0-1-hi 100)
+   (def cc0-1-hi (atom 1000))
+   (def cc0-2-lo (atom 0.1))
+   (def cc0-2-hi (atom 1000))
+   (def cc0-3-lo (atom 0.1))
+   (def cc0-3-hi (atom 1000))
+   (def cc0-4-lo (atom 0.1))
+   (def cc0-4-hi (atom 1000))
+   (def cc0-5-lo (atom 0.1))
+   (def cc0-5-hi (atom 1000))
+   (def cc0-6-lo (atom 0.1))
+   (def cc0-6-hi (atom 1000))
+   (def cc0-7-lo (atom 0.1))
+   (def cc0-7-hi (atom 1000))
+   (def cc0-8-lo (atom 0.1))
+   (def cc0-8-hi (atom 1000))
+ #+END_SRC
+
+*** large cc abstraction with dereferencing 
+ #+BEGIN_SRC clojure
+   (defsynth big-running [cc0-1 1 cc0-2 1 cc0-3 1 cc0-4 1 cc0-5 1 cc0-6 1 cc0-7 1 cc0-8 1]
+     (out 0 (* cc0-8 (rlpf (sin-osc (+ cc0-5 (* cc0-1 (phasor:kr (impulse:kr cc0-2) cc0-3 0 cc0-4)))) cc0-6 cc0-7))))
+
+   (def crazy-tunes (big-running))
+
+
+   (defn cc-rate-active-synth-abstraction [active-synth]
+     (on-event [:midi :control-change]
+               (fn [{cc-channel :note vel :velocity}]
+                 (cond (= cc-channel 1) (ctl active-synth :cc0-1 (scale-range vel 1 127 @cc0-1-lo @cc0-1-hi))
+                       (= cc-channel 2) (ctl active-synth :cc0-2 (scale-range vel 1 127 @cc0-2-lo @cc0-2-hi))
+                       (= cc-channel 3) (ctl active-synth :cc0-3 (scale-range vel 1 127 @cc0-3-lo @cc0-3-hi))
+                       (= cc-channel 4) (ctl active-synth :cc0-4 (scale-range vel 1 127 @cc0-4-lo @cc0-4-hi))
+                       (= cc-channel 5) (ctl active-synth :cc0-5 (scale-range vel 1 127 @cc0-5-lo @cc0-5-hi))
+                       (= cc-channel 6) (ctl active-synth :cc0-6 (scale-range vel 1 127 @cc0-6-lo @cc0-6-hi))
+                       (= cc-channel 7) (ctl active-synth :cc0-7 (scale-range vel 1 127 @cc0-7-lo @cc0-7-hi))
+                       (= cc-channel 8) (ctl active-synth :cc0-8 (scale-range vel 1 127 @cc0-8-lo @cc0-8-hi))
+                       ))
+               ::massive-tunes-control))
+
+   (def new-tunes-handler (cc-rate-active-synth-abstraction crazy-tunes))
+
+
+   (remove-event-handler ::massive-tunes-control)
+
+ #+END_SRC
+ *** experimental sound synths with various control change option
+*** making sin-osc FM noise (using ctl with many parameters)
+
+ #+BEGIN_SRC clojure 
+   ;; This buffer is for Clojure experiments and evaluation.
+   ;; Press C-j to evaluate the last expression.
+   (stop)
+
+   (demo (rhpf (pan2 (* (lf-tri:kr 5) (lf-tri 220)))))
+
+   (run 4 (poll:kr (impulse:kr 2) (line:kr 0 10 3 INF)))
+   (run 20 (poll:kr (impulse:kr 2) (phasor:kr :start 0 :end 10)))
+   (node? "Overtone Root")
+
+   (group-deep-clear 34)
+   (foundation-overtone-group)
+   (kill-server)
+   (boot-server)
+
+   (overtone.repl.ugens/find-ugen)
+
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+   (defsynth running [freq 1000 amp 0.5 w 100 x 10 y1 1 y2 1 z 0.1]
+     (out 0 (rlpf (sin-osc (* freq (phasor:kr (impulse:kr y1) y2 0 x))))))
+
+   (def the-tunes (running))
+
+#+END_SRC
+
+#+RESULTS:
+: #<synth: running>#'user/the-tunes
+
+#+BEGIN_SRC clojure
+   (ctl the-tunes :y1 0)
+#+END_SRC
+
+#+RESULTS:
+: #<synth-node[live]: user/running 36>
+
+#+BEGIN_SRC clojure
+   (on-event [:midi :control-change]
+             (fn [{cc-channel :note vel :velocity}]
+               (cond (= cc-channel 1) (ctl the-tunes :freq (scale-range vel 1 127 0.1 1000))
+                     (= cc-channel 2) (ctl the-tunes :y1 (scale-range vel 1 127 0.1 20))
+                     (= cc-channel 3) (ctl the-tunes :y2 (scale-range vel 1 127 0.1 30))))
+             ::the-tunes-control)
+
+
+
+   (remove-event-handler ::the-tunes-control)
+
+ #+END_SRC
+
+*** pulse-divider use
+#+BEGIN_SRC clojure
+  (defsynth env-tunes [freq 300 amp 1]
+    (out 0 (* amp
+              (env-gen (lin 0.4 1 0.4 0.5) 1 1 0 2)
+              (+ (sin-osc (/ freq 2))
+                 (rlpf (saw freq) (* 1.1 freq) 0.4)))))
+
+  (def check-env-tunes (env-tunes))
+
+
+  (ctl check-env-tunes :freq 400)
+
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(demo 10
+        (let [src1      (sin-osc 440)
+              src2      (sin-osc 880)
+              root-trig (impulse:kr 10)
+              t1        (pulse-divider:kr root-trig 20)
+              t2        (pulse-divider:kr root-trig 10)]
+          (* 100
+             (+ (* (decay t1 0.1) src1)
+                (* (decay t2 0.1) src2)))))
+  #+END_SRC
+
+  #+RESULTS:
+  : #<synth-node[loading]: quilbabel.core/audition-synth 46>
+
+#+BEGIN_SRC clojure :results silent
+  (demo 10 (sin-osc (+ 1000 (* 600 (lf-noise0:kr 12))) 0.3))
+#+END_SRC
+
+*** six parameter instrument with direct synth control-change event handeler
+ #+BEGIN_SRC clojure
+ (definst d1 [param1 10 param2 100 param3 1000 param4 10 param5 3 param6 100] (ring3 (* param1 (rlpf (resonz (saw) param2 ) param3 param4)) (* param5 (lf-noise0 param6))))
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+ (def my-d1 (d1))
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (on-event [:midi :control-change]
+           (fn [{cc-channel :note vel :velocity}]
+             (cond (= cc-channel 20) (ctl d1  :param1 (scale-range vel 1 127 0 100))
+                   (= cc-channel 21) (ctl d1 :param2 (scale-range vel 1 127 0 1))))
+           ::pooper)
+
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+ (on-event [:midi :control-change]
+           (fn [{cc-channel :note vel :velocity}]
+             (case cc-channel
+	       20 (ctl d1  :param1 (scale-range vel 1 127 0 10))
+	       21 (ctl d1  :param2 (scale-range vel 1 127 0 100))
+	       22 (ctl d1  :param3 (scale-range vel 1 127 0 1000))
+	       23 (ctl d1  :param4 (scale-range vel 1 127 0 10))))
+           ::pooper2)
+ #+END_SRC
+
+ #+RESULTS:
+ : :added-async-handler
+
+ #+BEGIN_SRC clojure
+ (remove-event-handler ::pooper2)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+ (remove-event-handler ::pooper)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+ (on-event [:midi :control-change]
+           (fn [{cc-channel :note vel :velocity}]
+             (case cc-channel
+	       20 (ctl d1  :param1 (scale-range vel 1 127 0 10))
+	       21 (ctl d1  :param2 (scale-range vel 1 127 0 100))
+	       22 (ctl d1  :param5 (scale-range vel 1 127 0 3))
+	       23 (ctl d1  :param6 (scale-range vel 1 127 0 1000))))
+           ::pooper3)
+ #+END_SRC
+
+
+ #+BEGIN_SRC clojure
+ (kill d1)
+ #+END_SRC
+
+*** ring modulation with resonz examples
+ #+BEGIN_SRC clojure
+ ;;(demo 10 (ring1 (* 0.4 (rlpf (resonz (saw) 1000 ) 1000 10)) (* 3 (lf-noise0 30))))
+ (demo 30 (ring3 (* 100 (rlpf (resonz (saw) 100 ) 1000 10)) (* 3 (lf-noise0 100))))
+ #+END_SRC
+
+ #+RESULTS:
+ : #<synth-node[loading]: quilbabel.core/audition-synth 49>
+
+*** a many parametered inst template (for ring modulation experiment)
+
+ #+BEGIN_SRC clojure
+ (definst d1 [param1 10 param2 100 param3 1000 param4 10 param5 100] (ring3 (* param1 (rlpf (resonz (saw) param2 ) param3 10)) (* param4 (lf-noise0 param5))))
+ #+END_SRC
+
+
+    #+RESULTS:
+    : #<instrument: d1>
+
+ #+BEGIN_SRC clojure
+ (kill my-d1)
+ #+END_SRC
+
+ #+RESULTS:
+ : nil
+
+ #+BEGIN_SRC clojure
+ (def my-d1 (d1))
+ #+END_SRC
+
+ #+RESULTS:
+ : #'user/my-d1
+
+ #+BEGIN_SRC clojure
+ (ctl my-d1 :param1 20 :param2 50 :param3 400 :param4 10 :param5 10)
+ #+END_SRC
+
+ #+RESULTS:
+ : #<synth-node[live]: user/d1 53>
+
+#+NAME: list-all-cc
+ #+BEGIN_SRC clojure
+   (on-event [:midi :control-change]
+             (fn [{cc-channel :note vel :velocity chan :channel}]
+	       (println (list cc-channel vel chan)))
+	       ::list-all)
+ #+END_SRC
+
+ #+RESULTS: list-all-cc
+ : :added-async-handler
+
+#+NAME: list-all-cc-remove
+ #+BEGIN_SRC clojure :results silent
+ (remove-event-handler ::list-all)
+ #+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+   (on-event [:midi :note-on]
+             (fn [{cc-channel :note vel :velocity chan :channel}]
+	       (println (list cc-channel vel chan)))
+	       ::list-all-notes)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::list-all-notes)
+#+END_SRC
+** new morning of macros and digital synthesis
+*** define a "run poll" helper abstraction
+
+#+BEGIN_SRC clojure :results silent
+(demo 5 (pan2 (bpf (pink-noise) 500)))
+
+(run (poll:kr (impulse:kr 10) (phasor:kr (impulse:kr 1) 1 100 1000 100)))
+
+(demo 5 (pan2 (bpf (pink-noise) (phasor:kr (impulse:kr 0.25) 0.25 100 1000 100))))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(defn view [ugen refresh-rate]
+ (run (poll:kr (impulse:kr refresh-rate) ugen)))
+#+END_SRC
+
+*** "demo-time" sidetrack
+**** why providing values to demo cause problems?? why?
+ #+BEGIN_SRC clojure :results silent
+ (let [track-length 30 seconds-duration (reciprocal track-length) ]
+   (demo seconds-duration
+         (pan2 (bpf (pink-noise)
+                    (phasor:kr (impulse:kr seconds-duration) seconds-duration 100 1000 100)))))
+
+ #+END_SRC
+
+ #+BEGIN_SRC clojure
+ (let [track-length 10
+       per-second (reciprocal track-length)]
+   (run (poll:kr (impulse:kr track-length)
+                 (phasor:kr (impulse:kr per-second) per-second 100 1000 100))))
+ #+END_SRC
+
+ #+RESULTS:
+ : #<synth-node[loading]: user/audition-synth 54>
+
+ #+BEGIN_SRC clojure
+ (let [track-length 10
+       per-second (reciprocal track-length)]
+   (demo track-length (pan2 (bpf (pink-noise)
+                 (phasor:kr (impulse:kr per-second) per-second 100 1000 100)))))
+ #+END_SRC
+
+ #+RESULTS:
+
+ #+BEGIN_SRC clojure :results silent
+   (demo 30 (pan2 (bpf (pink-noise)
+                 (phasor:kr (impulse:kr (reciprocal 30)) (reciprocal 30) 100 1000 100))))
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (let [track-length 30
+       every-x-seconds (reciprocal track-length)]
+   (demo track-length (pan2 (bpf (pink-noise)
+                 (phasor:kr (impulse:kr (reciprocal 30)) (reciprocal 30) 100 1000 100)))))
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (let [x 30
+ ;;      y (reciprocal x)
+ ]
+   (demo 30 (pan2 (bpf (pink-noise)
+                 (phasor:kr (impulse:kr (reciprocal 30)) (reciprocal 30) 100 1000 100)))))
+ #+END_SRC
+
+**** re-bind demo-time how?
+ dynamically in a let yeah? use =binding= form as per Emerick?
+
+ #+BEGIN_SRC clojure :results silent
+ (let [*demo-time* 100] 
+   (demo (sin-osc)))
+ #+END_SRC
+
+
+ #+BEGIN_SRC clojure :results output
+ (let [*demo-time* 100 
+       _ (println *demo-time*)
+       _ (demo (sin-osc))])
+ #+END_SRC
+
+ #+RESULTS:
+ : 100
+
+ #+BEGIN_SRC clojure :results output
+
+ #+END_SRC
+
+ #+RESULTS:
+
+ #+BEGIN_SRC clojure :results silent
+ (let [x 30
+ *demo-time* (* x 1000)
+       y (reciprocal x)
+ ]
+   (demo (pan2 (bpf (pink-noise)
+                 (phasor:kr (impulse:kr y) y 100 1000 100)))))
+ #+END_SRC
+
+*** new granular synth work
+**** what do granular synths have in common and what distinguishes them?
+ #+BEGIN_SRC clojure 
+;; (t-grains:ar 1 (impulse:ar trate) b 1 (mouse-x:kr 0 (buf-dur:kr b)) dur 0 amp 2)
+;; (t-grains:ar 1 (impulse:ar trate) b 1 (mouse-x:kr 0 (buf-dur:kr b)) dur 0 0.8 2)
+;; (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2)
+;; (t-grains:ar 1 clk buffer 1 line-centerpos dur 0 amp 2)
+;; (t-grains:ar 1 clk buffer 1 line-centerpos dur 0 amp 2)
+;; (t-grains:ar 1 clk buffer 1 line-centerpos dur 0 amp 2)
+ #+END_SRC
+
+**** get your cc0-1 targets ready
+[Use C-c C-v g to find =instrument1-highs-and-lows= named block]
+ [[id:8782BB3C-2F55-4D1E-90A8-8EE70F8A933F][consider (create) new lo-hi cc names]]
+
+#+CALL: instrument1-highs-and-lows()
+
+setting good values for these will make or break things
+ 
+
+**** Get your crazy large event handler back
+ [[id:E8545810-AC0F-46E3-811C-77CF8C2F1D03][refactor active synth abstraction for more scale-range control]]
+
+#+CALL: axiom-cc-four-knob-abstraction()
+**** define a "rand grain" with "cc args" and no mouse
+***** define synth
+ #+BEGIN_SRC clojure :results silent
+      (defsynth mouse-rand-ccgrain
+    "Summary of arglist: buffer; trate; amp; centerpos; AND then reverb args...
+    roomsize; revtime; damping; inputbw; drylevel; earlyreflevel; taillevel; maxroomsize"
+        [buffer 0 cc0-1 1
+ 	cc0-2 12 cc0-3 0.8
+ 	cc0-4 0 roomsize 10
+ 	revtime 5 damping 0.5
+ 	inputbw 0.2 drylevel 0.1
+ 	earlyreflevel 0.7 taillevel 0.5
+ 	maxroomsize 300]
+        (let [trate cc0-1 ;;(mouse-y:kr 0.5 20)
+              track-len (buf-dur:kr buffer)
+              dur (/ cc0-2 trate)
+              clk (impulse:kr trate)
+              line-centerpos (+ (* cc0-4 (reciprocal track-len))
+                                (line:kr 0 (* 0.5 track-len) (* 2 track-len))
+                                (t-rand:kr 0 0.01 clk))]
+          (out 0 (pan2 (g-verb  
+                  (t-grains:ar 1 clk buffer 1 ;; no mouse, line/rand, cc args
+                               line-centerpos dur 0 cc0-3 2 ) )))))
+ #+END_SRC
+
+***** instantiate some synths
+  #+BEGIN_SRC clojure :results silent
+  (def viol1 (mouse-rand-ccgrain :buffer 1))
+  #+END_SRC
+
+  #+BEGIN_SRC clojure :results silent
+  (def v2 (mouse-rand-ccgrain :buffer 2))
+  #+END_SRC
+
+  #+BEGIN_SRC clojure :results silent
+  (ctl v2 :cc0-3 0.3)
+  #+END_SRC
+
+  #+BEGIN_SRC clojure :results silent
+  (ctl v2 :revtime 1)
+  #+END_SRC
+
+  #+BEGIN_SRC clojure :results silent
+  (ctl v2 :roomsize 1)
+  #+END_SRC
+
+
+
+
+* contains "double-colon-name"
+*** function definition
+
+#+begin_src clojure :results silent
+;; determine "centerpos" based on MIDI keyboard notes
+
+
+(defn note-on-eventer [active-synth handler-double-colon-name]
+  (on-event [:midi :note-on]
+            (fn [{note :note}]
+              (let [val (deref current-val)]
+                (do (reset! current-val (maprange [60 91] [0.0 @dst-hi] note))
+                    (ctl active-synth :centerpos val)
+                    (println (str "centerpos (via dst-hi): " (round2 val 2))))))
+            handler-double-colon-name))
+
+
+
+#+end_src
+*** prepare to define function 
+   :PROPERTIES:
+   :ID:       254BF7C9-931F-4E30-AEC6-05990B46BE41
+   :END:
+Can set any ref to be used with any knob-num!
+Refs all come with a "-ref" name ending!
+
+Needs an active-synth! (That is making use of that ref's value?)
+
+#+BEGIN_SRC clojure :results silent
+  (defn cc-on-eventer-printer [a-ref knob-num double-colon-name]
+    (on-event [:midi :control-change]
+              (fn [{note :note val :velocity}]
+                (cond (= note knob-num) 
+                      (do (reset! a-ref val)
+                          (println (str double-colon-name ": " (deref a-ref))))))
+              double-colon-name))
+#+END_SRC
+*** control trate with cc-on-eventer
+By hard coding range values, it suggests you are building in a
+specific use for this event-handler!
+
+#+BEGIN_SRC clojure :results silent
+  (defn cc-trate-on-eventer [active-synth a-ref knob-num double-colon-name]
+    (on-event [:midi :control-change]
+              (fn [{note :note vel :velocity}]
+                (let [val (deref a-ref)]
+                  (cond (= note knob-num) 
+                        (do (reset! a-ref (maprange [0 127] [0.01 2] vel))
+                            (ctl active-synth :trate (deref a-ref))
+                            (println (str double-colon-name ": " (round2 val 2) " => " (round2 (deref a-ref) 2)))))))
+                double-colon-name))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(cc-trate-on-eventer var1-noline trate-ref 1 ::var1-trate-change)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::var1-trate-change)
+#+END_SRC
+*** the big ungainly cc-active-synth abstraction
+     :PROPERTIES:
+     :ID:       28E86AB4-032F-47BB-A094-012BDE22C686
+     :END:
+
+#+NAME: cc-active-synth-abstraction
+#+BEGIN_SRC clojure :results silent
+   (cc-active-synth-abstraction [active-synth double-colon-name]
+                            (on-event [:midi :control-change]
+               (fn [{cc-channel :note vel :velocity}]
+                 (cond (= cc-channel 1) (ctl active-synth :cc0-1 (scale-range vel 1 127 @cc0-1-lo @cc0-1-hi))
+                       (= cc-channel 2) (ctl active-synth :cc0-2 (scale-range vel 1 127 @cc0-2-lo @cc0-2-hi))
+                       (= cc-channel 3) (ctl active-synth :cc0-3 (scale-range vel 1 127 @cc0-3-lo @cc0-3-hi))
+                       (= cc-channel 4) (ctl active-synth :cc0-4 (scale-range vel 1 127 @cc0-4-lo @cc0-4-hi))
+                       (= cc-channel 5) (do (reset! cc0-1-lo (scale-range vel 1 127 20 200)) (reset! cc0-2-lo (scale-range vel 1 127 0.5 10)) (println (str @cc0-1-lo) (str @cc0-2-lo)))
+                       (= cc-channel 6) (do (reset! cc0-1-hi (scale-range vel 1 127 500 2000)) (reset! cc0-2-hi (scale-range vel 1 127 10 50)) (println (str @cc0-1-hi) (str @cc0-2-hi)))
+                       (= cc-channel 7) (do (reset! cc0-3-lo vel) (reset! cc0-4-lo vel))
+                       (= cc-channel 8) (do (reset! cc0-3-hi vel) (reset! cc0-4-hi vel))
+                       ))
+               double-colon-name))
+#+END_SRC
+*** refactor =active synth abstraction= for more scale-range control
+     :PROPERTIES:
+     :DATE_CREATED: [2017-03-01 Wed 16:50]
+     :ID:       E8545810-AC0F-46E3-811C-77CF8C2F1D03
+     :END:
+
+#+NAME: axiom-cc-four-knob-abstraction
+ #+BEGIN_SRC clojure :results silent
+ (defn cc-active-synth-abstraction-reset-args [active-synth rlolo-1 rlohi-1 rlolo-2 rlohi-2 rhilo-1 rhihi-1 rhilo-2 rhihi-2 double-colon-name]
+   (on-event [:midi :control-change]
+ 	    (fn [{cc-channel :note vel :velocity}]
+               (cond (= cc-channel 1) (ctl active-synth :cc0-1 (scale-range vel 1 127 @instrument1-cc0-1-lo @instrument1-cc0-1-hi))
+ 		    (= cc-channel 2) (ctl active-synth :cc0-2 (scale-range vel 1 127 @instrument1-cc0-2-lo @instrument1-cc0-2-hi))
+ 		    (= cc-channel 3) (ctl active-synth :cc0-3 (scale-range vel 1 127 @instrument1-cc0-3-lo @instrument1-cc0-3-hi))
+ 		    (= cc-channel 4) (ctl active-synth :cc0-4 (scale-range vel 1 127 @instrument1-cc0-4-lo @instrument1-cc0-4-hi))
+ 		    (= cc-channel 5) (do (reset! instrument1-cc0-1-lo (scale-range vel 1 127 rlolo-1 rlohi-1)) (reset! instrument1-cc0-2-lo (scale-range vel 1 127 rlolo-2 rlohi-2)) (println (str @instrument1-cc0-1-lo) (str @instrument1-cc0-2-lo)))
+ 		    (= cc-channel 6) (do (reset! instrument1-cc0-1-hi (scale-range vel 1 127 rhilo-1 rhihi-1)) (reset! instrument1-cc0-2-hi (scale-range vel 1 127 rhilo-2 rhihi-2)) (println (str @instrument1-cc0-1-hi) (str @instrument1-cc0-2-hi)))
+ 		    (= cc-channel 7) (do (reset! instrument1-cc0-3-lo vel) (reset! instrument1-cc0-4-lo vel))
+ 		    (= cc-channel 8) (do (reset! instrument1-cc0-3-hi vel) (reset! instrument1-cc0-4-hi vel))
+ 		    ))
+ 	    double-colon-name))
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (ctl filterable-background :cc0-1 500)
+ (ctl filterable-background :cc0-3 0.2)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (ctl filterable-background :cc0-1 100)
+ (ctl filterable-background :cc0-3 0.4)
+ #+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+
+#+END_SRC
+*** create the macro!
+    :PROPERTIES:
+    :DATE_CREATED: [2017-03-03 Fri 09:50]
+    :END:
+First of all, prefer =case= to =cond=
+#+BEGIN_SRC clojure
+;;       16 (ctl active-synth :room16 (scale-range vel 1 127 0.1 10))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(= cc-channel 5) 
+(do (reset! instrument1-cc0-1-lo (scale-range vel 1 127 rlolo-1 rlohi-1))
+    (reset! instrument1-cc0-2-lo (scale-range vel 1 127 rlolo-2 rlohi-2))
+    (println (str @instrument1-cc0-1-lo) (str @instrument1-cc0-2-lo)))
+#+END_SRC
+
+
+#+NAME: cc-knob-scale-range-macro
+#+BEGIN_SRC clojure :results silent
+(defmacro test [active-synth cc-knob tar-lo tar-hi vel]
+  `(ctl ~active-synth ~cc-knob (scale-range ~vel 1 127 ~tar-lo ~tar-hi)))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(macroexpand-1 '(test sympth :cc0-1 0 100))
+#+END_SRC
+
+#+RESULTS:
+| overtone.live/ctl | sympth | :cc0-1 | (overtone.live/scale-range user/vel 1 127 0 100) |
+
+#+BEGIN_SRC clojure
+(defn simple-test [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       1 (test active-synth :cc0-1 0 100 vel)
+       2 (test active-synth :cc0-2 0 100 vel)
+       3 (test active-synth :cc0-3 0 100 vel)
+       4 (test active-synth :cc0-4 0 100 vel)
+       5 (test active-synth :cc0-5 0 100 vel)
+       6 (test active-synth :cc0-6 0 100 vel)
+       7 (test active-synth :cc0-7 0 100 vel)
+       8 (test active-synth :cc0-8 0 100 vel)
+       ))
+   double-colon-name))
+#+END_SRC
+
+#+RESULTS:
+: #'user/simple-test
+
+#+BEGIN_SRC clojure :results silent
+(simple-test filterable-background ::simple-test-handler)
+#+END_SRC
+*** develop improved system to dynamically rescale cc ranges!
+    :PROPERTIES:
+    :DATE_CREATED: [2017-03-03 Fri 10:20]
+    :END:
+What about a "sensitivity" index, which controls how much the
+boundaries of the range reset, either broadening or narrowing?
+
+#+BEGIN_SRC clojure :results silent
+(reset! cc0-1-range-offset)
+(reset! cc0-1-range-scale)
+
+(test active-synth :cc0-1 
+      @cc0-1-range-offset
+      (+ @cc0-1-range-offset (* @cc-range-scale @cc0-1-range-offset)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def cc0-1-range-offset (atom 1))
+(def cc0-1-range-scale (atom 1))
+(def cc0-2-range-offset (atom 1))
+(def cc0-2-range-scale (atom 1))
+(def cc0-3-range-offset (atom 1))
+(def cc0-3-range-scale (atom 1))
+(def cc0-4-range-offset (atom 1))
+(def cc0-4-range-scale (atom 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+5 (reset! cc0-1-range-offset vel)
+6 (reset! cc0-1-range-scale vel)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn simple-scaling-test [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       1 (test active-synth :cc0-1 
+               @cc0-1-range-offset
+               (+ @cc0-1-range-offset (* @cc0-1-range-scale @cc0-1-range-offset)) vel)
+       2 (test active-synth :cc0-2
+               @cc0-2-range-offset
+               (+ @cc0-2-range-offset (* @cc0-2-range-scale @cc0-2-range-offset)) vel)
+       3 (test active-synth :cc0-3 
+               @cc0-3-range-offset
+               (+ @cc0-3-range-offset (* @cc0-3-range-scale @cc0-3-range-offset)) vel)
+       4 (test active-synth :cc0-4 
+               @cc0-4-range-offset
+               (+ @cc0-4-range-offset (* @cc0-4-range-scale @cc0-4-range-offset)) vel)
+       
+       5 (reset! cc0-1-range-offset vel)
+       6 (reset! cc0-1-range-scale vel)
+       7 (test active-synth :cc0-7 0 100 vel)
+       8 (test active-synth :cc0-8 0 100 vel)
+       ))
+   double-colon-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(simple-scaling-test filterable-background ::simple-scaling-test-handler)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::simple-test-handler)
+#+END_SRC
+*** define large mini-scaling event-handler function
+#+BEGIN_SRC clojure :results silent
+(defn mini-scaling-test [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
+              (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
+              (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
+              (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
+              (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
+              (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
+              (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+              (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+       34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+       35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+       36 (ctl active-synth :cc36 (scale-range vel 1 127 @offset (+ @offset @ranger)))
+       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+       41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+       ))
+   double-colon-name))
+#+END_SRC
+*** A new set of values for the axiom of the finale
+
+#+BEGIN_SRC clojure :results silent
+(def instrument1-cc0-1-lo (atom 0.1))
+(def instrument1-cc0-1-hi (atom 100))
+(def instrument1-cc0-2-lo (atom 1))
+(def instrument1-cc0-2-hi (atom 30))
+(def instrument1-cc0-3-lo (atom 0))
+(def instrument1-cc0-3-hi (atom 195))
+(def instrument1-cc0-4-lo (atom 0.01))
+(def instrument1-cc0-4-hi (atom 2))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+ (defsynth axiomrand-ccgrain-no-line
+   "Summary of arglist: buffer; trate; amp; centerpos..."
+   [buffer 0 
+    cc0-1 1
+    cc0-2 12 
+    cc0-3 0
+    cc0-4 0.8
+    cc0-5 0.01
+    cc0-7 1.0]
+   (let [trate cc0-1 ;;(mouse-y:kr 0.5 20)
+         track-len (buf-dur:kr buffer)
+         dur (/ cc0-2 trate)
+         clk (impulse:kr trate)
+         line-centerpos (+ (* cc0-3 cc0-7) (t-rand:kr 0 cc0-5 clk))
+         ]
+     (out 0 (pan2 
+             (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
+                          line-centerpos dur
+                          0 cc0-4 2)))))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn cc-active-synth-abstraction-reset-args [active-synth double-colon-name]
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note vel :velocity}]
+              (case cc-channel
+                1(ctl active-synth :cc0-1 (scale-range vel 1 127 @instrument1-cc0-1-lo @instrument1-cc0-1-hi))
+                2 (ctl active-synth :cc0-2 (scale-range vel 1 127 @instrument1-cc0-2-lo @instrument1-cc0-2-hi))
+                3 (ctl active-synth :cc0-3 (scale-range vel 1 127 @instrument1-cc0-3-lo @instrument1-cc0-3-hi))
+                4 (ctl active-synth :cc0-4 (scale-range vel 1 127 @instrument1-cc0-4-lo @instrument1-cc0-4-hi))
+                5 (ctl active-synth :cc0-5 (scale-range vel 1 127 @instrument1-cc0-4-lo @instrument1-cc0-4-hi))
+                7 (ctl active-synth :cc0-7 (scale-range vel 1 127 0 1))
+                ))
+            double-colon-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def axiom-obsessive (axiomrand-ccgrain-no-line 2))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(cc-active-synth-abstraction-reset-args axiom-obsessive ::axiom-obsess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::axiom-obsess)
+;; (remove-event-handler ::obess)
+#+END_SRC
+*** define event-handler fn for two synths with 8 knobs
+ #+BEGIN_SRC clojure :results silent
+ (defn simple8-drop-in-event-handler [active-synth1 active-synth2 double-colon-name]
+   (on-event [:midi :control-change]
+             (fn [{cc-channel :note vel :velocity}]
+               (case cc-channel
+             1 (cc-one active-synth1 vel)
+             2 (cc-two active-synth1 vel)
+             3 (cc-three active-synth1 vel)
+             4 (cc-four active-synth1 vel)
+             5 (cc-five active-synth2 vel)
+             6 (cc-six active-synth2 vel)
+             7 (cc-seven active-synth2 vel)
+             8 (cc-eight active-synth2 vel)))
+             double-colon-name))
+ #+END_SRC
+*** create large event handler to use knobs for yancey and goldberg synths
+
+#+BEGIN_SRC clojure :results silent
+(defn granular-synth-non-centerpos-handler [active-synth1 active-synth2 double-colon-name]
+  (on-event [:midi :control-change]
+            (fn [{knob :note vel :velocity}]
+              (case knob
+                1 (ctl active-synth1 :trate (knob1-fn vel))
+                2 (ctl active-synth1 :dur-numerator (knob2-fn vel))   
+                5 (ctl active-synth1 :amp (knob5-fn vel))
+                6 (ctl active-synth1 :trand (knob6-fn vel))
+                3 (ctl active-synth2 :trate (knob3-fn vel))
+                4 (ctl active-synth2 :dur-numerator (knob4-fn vel))
+                7 (ctl active-synth2 :amp (knob7-fn vel))
+                8 (ctl active-synth2 :trand (knob8-fn vel))))
+            double-colon-name))
+#+END_SRC
+*** no line and no mouse synth with minilogue
+
+#+NAME: play
+#+BEGIN_SRC clojure :results silent
+(definst play [b 0] (play-buf 1 b))
+#+END_SRC
+
+#+CALL: play(b=2)
+
+#+BEGIN_SRC clojure :results silent
+(defsynth no-mouse-rand-ccgrain-no-line
+  "Summary of arglist: buffer; trate; amp; centerpos..."
+  [buffer 0 
+   cc0-1 1
+   cc0-2 12 
+   cc0-3 0.8
+   cc0-4 0]
+  (let [trate cc0-1 ;;(mouse-y:kr 0.5 20)
+        track-len (buf-dur:kr buffer)
+        dur (/ cc0-2 trate)
+        clk (impulse:kr trate)
+        line-centerpos (+ cc0-4
+                          (line:kr 0 track-len track-len)
+                          (t-rand:kr 0 0.01 clk))
+        ]
+    (out 0 (pan2 
+            (t-grains:ar 1 clk buffer 1 ;; no mouse/line, rand cc args
+                         line-centerpos dur 
+                         0 cc0-3 2)))))
+ #+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def v3 (mouse-rand-ccgrain-no-line :buffer 3))
+#+END_SRC
+
+Make sure you have defined your abstraction
+[[id:28E86AB4-032F-47BB-A094-012BDE22C686][the big ungainly cc-active-synth abstraction]]
+
+#+CALL: cc-active-synth-abstraction()
+
+#+BEGIN_SRC clojure :results silent
+(defn cc-minilogue1-reverb [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       16 (ctl active-synth :room16 (scale-range vel 1 127 0.1 10))
+       17 (ctl active-synth :rev17 (scale-range vel 1 127 0.1 5))
+       18 (ctl active-synth :damp18 (scale-range vel 1 127 0 1))
+       19 (ctl active-synth :input19 (scale-range vel 1 127 0 1))
+       20 (ctl active-synth :dry20 (scale-range vel 1 127 0.1 2))
+       21 (ctl active-synth :early21 (scale-range vel 1 127 0.1 1))
+       22 (ctl active-synth :tail22 (scale-range vel 1 127 0.1 1))
+       23 (ctl active-synth :max23 (scale-range vel 1 127 1 400))
+       43 (ctl active-synth :amp (scale-range vel 1 127 0.001 0.01))
+       ))
+   double-colon-name))
+#+END_SRC
+
+The "non-synth" arguments affect the way the "adjuster" knobs work
+ #+BEGIN_SRC clojure :results silent
+  (cc-active-synth-abstraction-reset-args v3 0.5 10 1 12 10 20 12 30 ::reset-args-ev-handler)
+ #+END_SRC
+
+
+ #+BEGIN_SRC clojure :results silent
+ (ctl v3 :cc0-3 0.1)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (ctl v3 :cc0-4 100)
+ #+END_SRC
+
+ #+BEGIN_SRC clojure :results silent
+ (ctl viol1 :cc0-1 (scale-range 1 1 127 @instrument1-cc0-1-lo @instrument1-cc0-1-hi))
+ #+END_SRC
+
+  #+BEGIN_SRC clojure :results silent
+  (remove-event-handler ::considerable-noise-event-handler)
+  #+END_SRC
+*** using minilogue for reverb
+#+BEGIN_SRC clojure :results silent
+  (definst pley [buf 1 amp 0.01 room16 10 rev17 5 damp18 0.5 input19 0.2 dry20 0.1 early21 0.7 tail22 0.5 max23 300] 
+    (* amp
+       (g-verb
+	(play-buf 1 buf 1 1 0 1)
+	room16
+	rev17
+	damp18
+	input19
+	dry20
+	early21
+	tail22
+	max23)))
+
+  (def short-a (pley 4))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl pley :room16 1 :amp 0.2 :rev17 2 :damp18 0.1 :input19 0.1 :dry20 0.9 :early21 0.1 :tail22 0.2 :max23 10 )
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn cc-minilogue1-reverb [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       16 (ctl active-synth :room16 (scale-range vel 1 127 0.1 10))
+       17 (ctl active-synth :rev17 (scale-range vel 1 127 0.1 5))
+       18 (ctl active-synth :damp18 (scale-range vel 1 127 0 1))
+       19 (ctl active-synth :input19 (scale-range vel 1 127 0 1))
+       20 (ctl active-synth :dry20 (scale-range vel 1 127 0.1 2))
+       21 (ctl active-synth :early21 (scale-range vel 1 127 0.1 1))
+       22 (ctl active-synth :tail22 (scale-range vel 1 127 0.1 1))
+       23 (ctl active-synth :max23 (scale-range vel 1 127 1 400))
+       43 (ctl active-synth :amp (scale-range vel 1 127 0.001 0.01))
+       ))
+   double-colon-name))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(cc-minilogue1-reverb short-a ::shortay)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::shortay)
+#+END_SRC
+
+
+*** [#A] minilogue for grains
+      :PROPERTIES:
+      :ID:       ABD50379-307B-44F0-BA31-7540257029DC
+      :END:
+
+#+NAME: minirand-ccgrain-no-line
+#+BEGIN_SRC clojure :results silent
+ (defsynth minirand-ccgrain-no-line
+   "Summary of arglist: buffer; trate; amp; centerpos..."
+   [buffer 0 
+    cc34 1
+    cc35 12 
+    cc36 0
+    cc37 0.8
+    cc41 0.01]
+   (let [trate cc34 ;;(mouse-y:kr 0.5 20)
+         track-len (buf-dur:kr buffer)
+         dur (/ cc35 trate)
+         clk (impulse:kr trate)
+         line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
+         ]
+     (out 0 (pan2 
+             (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
+                          line-centerpos dur
+                          0 cc37 2)))))
+
+#+END_SRC
+
+#+NAME: cc-minilogue1-grains-event-handler
+#+BEGIN_SRC clojure :results silent
+(defn cc-minilogue1-grains [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+       35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+       36 (ctl active-synth :cc36 (scale-range vel 1 127 0 100)) 
+;; consider the following for a choppier, but actual buf-dur length
+;; (ctl active-synth :cc36 (scale-range vel 1 127 0 190))
+       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+       41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+       :else nil
+       ))
+   double-colon-name))
+#+END_SRC
+
+#+NAME: apotheose-cloud
+#+BEGIN_SRC clojure :results silent
+(def obessive (minirand-ccgrain-no-line 1))
+#+END_SRC
+
+#+NAME: apotheose-cloud-handler
+#+BEGIN_SRC clojure :results silent
+(cc-minilogue1-grains obessive ::obess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::obess)
+#+END_SRC
+
+
+* [#A] build large event handler (using "on-event")
+
+** hide largest on-event template (respond to CC on channel 1 or other)
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note val :velocity chan :channel}]
+              (if (= chan 1)
+                (cond (= cc-channel 1) (reset! cc1-1 val)
+                      (= cc-channel 2) (reset! cc2-1 val)
+                      (= cc-channel 3) (reset! cc3-1 val)
+                      (= cc-channel 4) (reset! cc4-1 val)
+                      (= cc-channel 5) (reset! cc5-1 val)
+                      (= cc-channel 6) (reset! cc6-1 val)
+                      (= cc-channel 7) (reset! cc7-1 val)
+                      (= cc-channel 8) (reset! cc8-1 val)
+                      )
+                (cond (= cc-channel 1) (reset! cc1-2 val)
+                      (= cc-channel 2) (reset! cc2-2 val)
+                      (= cc-channel 3) (reset! cc3-2 val)
+                      (= cc-channel 4) (reset! cc4-2 val)
+                      (= cc-channel 5) (reset! cc5-2 val)
+                      (= cc-channel 6) (reset! cc6-2 val)
+                      (= cc-channel 7) (reset! cc7-2 val)
+                      (= cc-channel 8) (reset! cc8-2 val)
+                      )))
+              ::large-cc-state)
+          
+          
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::large-cc-state)
+#+END_SRC
+
+** view current state
+
+#+BEGIN_SRC clojure :results silent
+(list 'Channel-one  @cc1-1 @cc2-1 @cc3-1 @cc4-1 @cc5-1 @cc6-1 @cc7-1 @cc8-1 'Channel-two @cc1-2 @cc2-2 @cc3-2 @cc4-2 @cc5-2 @cc6-2 @cc7-2 @cc8-2)
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(str "cc1-1: " @cc1-1 " cc2-1: " @cc2-1 " cc3-1: " @cc3-1 " cc4-1: " @cc4-1 " cc5-1: " @cc5-1 " cc6-1: " @cc6-1 " cc7-1: " @cc7-1 " cc8-1: " \n @cc8-1 " cc1-2: " @cc1-2 @cc2-2 @cc3-2 @cc4-2 @cc5-2 @cc6-2 @cc7-2 @cc8-2)
+#+END_SRC
+
+
+** println CC-knob values and assign to SLOW-GRAIN-REVERB parameters
+
+Requires slow-grain-reverb to be playing
+
+Kill the id
++[[id:F109AE32-4289-4A8B-8637-B68D7B4FA5B6][SLOW-GRAIN-REVERB: dedicated instrument abstraction for t-grains synths]]+
+
+[[file:granulars-copied-from-post-tonal.org::*SLOW-GRAIN-REVERB: dedicated instrument abstraction for t-grains synths][SLOW-GRAIN-REVERB: dedicated instrument abstraction for t-grains synths]]
+#+BEGIN_SRC clojure
+    (on-event [:midi :control-change]
+              (fn [{cc-channel :note val :velocity chan :channel}]
+                (if (= chan 1)
+                  (cond (= cc-channel 1) (do (reset! cc1-1 (+ 1 (* val @cc5-1)))
+                                             (ctl slow-grain-reverb :centerpos @cc1-1))
+                        (= cc-channel 2) (do (reset! cc2-1 (+ 1 (* val @cc6-1)))
+                                             (ctl slow-grain-reverb :centerpos @cc2-1))
+                        (= cc-channel 3) (do (reset! cc3-1 (+ 1 (* val @cc7-1)))
+                                             (ctl slow-grain-reverb :centerpos @cc3-1))
+                        (= cc-channel 4) (do (reset! cc4-1 (+ 1 (* val @cc8-1)))
+                                             (ctl slow-grain-reverb :centerpos @cc4-1))
+                        (= cc-channel 5) (reset! cc5-1 val)
+                        (= cc-channel 6) (reset! cc6-1 val)
+                        (= cc-channel 7) (reset! cc7-1 val)
+                        (= cc-channel 8) (reset! cc8-1 val)
+                        ))
+                (if (= chan 2)
+                  (cond (= cc-channel 1) (do (reset! cc1-2 (scale-range val 1 127 0 1))
+                                             (ctl slow-grain-reverb :grain-dur @cc1-2))
+                        (= cc-channel 2) (do (reset! cc2-2 (scale-range val 1 127 1 2))
+                                             (ctl slow-grain-reverb :centerpos @cc2-2))
+                        (= cc-channel 3) (do (reset! cc3-2 (scale-range val 1 127 0 1))
+                                             (ctl slow-grain-reverb :trigger-rate @cc3-2))
+                        (= cc-channel 4) (do (reset! cc4-2 (+ 1 (* val @cc8-2)))
+                                             (ctl slow-grain-reverb :centerpos @cc4-2)
+                                             (println @cc4-2))
+                        (= cc-channel 5)  (do (reset! cc5-2 val) 
+                                             (println "@cc5-2:" @cc5-2))
+                        (= cc-channel 6) (do (reset! cc6-2 val) 
+                                             (println "@cc6-2:" @cc6-2))
+                        (= cc-channel 7) (do (reset! cc7-2 val) 
+                                             (println "@cc7-2:" @cc7-2))
+                        (= cc-channel 8) (do (reset! cc8-2 val) 
+                                             (println "@cc8-2:" @cc8-2))
+                        )))              
+  ::interdependent-knobs)
+  ;; pseudo-code
+
+
+#+END_SRC
+
+#+RESULTS:
+: :added-async-handler
+
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::interdependent-knobs)
+#+END_SRC
+
+** simple example of using RESET! and CTL on a noise synth
+#+BEGIN_SRC clojure :results silent
+
+    (on-event [:midi :control-change]
+              (fn [{cc-channel :note vel :velocity}]
+                (cond (= cc-channel 1) (do (reset! ffl (/ vel 127 )) 
+                                           (ctl someother-fnoise :vol   (scale-range vel 1 127 0 1)))
+                      (= cc-channel 2) (do (reset! ffh (* vel 10))
+                                           (ctl someother-fnoise :ffreq (scale-range vel 1 127 @ffl @ffh)))
+                      ))
+              ::someother-pooper-do)
+
+#+END_SRC
+
+
+* load samples
+
+#+BEGIN_SRC clojure
+  (def variation1 (load-sample (str path-to-mono "apollo-variation1-mono.wav")))
+  (def variation2 (load-sample (str path-to-mono "apollo-variation2-mono.wav")))
+  (def apotheose (load-sample (str path-to-mono "apotheose-mono.wav")))
+  (def calliope (load-sample (str path-to-mono "calliope-mono.wav")))
+  (def coda (load-sample (str path-to-mono "coda-mono.wav")))
+  (def yancey  (load-sample (str path-to-mono "how-long-slowest-mono.wav")))
+  (def naissance (load-sample (str path-to-mono "naissance-mono.wav")))
+  (def pas-daction (load-sample (str path-to-mono "pas-daction-real-mono.wav")))
+  (def pas-deux (load-sample (str path-to-mono "pas-de-deux-mono1.wav")))
+  (def polymnie (load-sample (str path-to-mono "polymnie-mono.wav")))
+  (def terpsichore (load-sample (str path-to-mono "terpsichore-mono.wav")))
+  ;; not in all-mono dir?
+  (def goldberg-slow (load-sample "~/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav"))
+  (def irma (load-sample (str path-to-sounds "sounds/full-time-mono.wav")))
+
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def variation1 (load-sample (str path-to-mono "apollo-variation1-mono.wav")))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(def yancey (load-sample "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/all-mono/how-long-slowest-mono.wav"))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+  (def irma (load-sample (str path-to-sounds "sounds/full-time-mono.wav"))))
+#+END_SRC
+
+#+RESULTS:
+
+
+**** basic loading and playback                                 :play:buffer:
+
+#+BEGIN_SRC clojure :results silent
+(def goldberg-slow (load-sample "/Users/b/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav"))
+
+;; see load all below
+;; (def yancey (load-sample "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/all-mono/how-long-slowest-mono.wav"))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(definst play [b 0] (play-buf 1 b))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  ;; (in-ns 'user)
+  (play)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+  (def violin-solo-var1 (play 0))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def bjork-chords-var2 (play 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def pickup-flipside-apoth   (play 2))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def spiky-triplets-calliope   (play 3))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def uptempo-coda (play 4))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def yanc (play 5))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def opening-unison-naissance (play 6))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def gentle-predeux-action (play 7))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def pasdeux (play 8))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def scherzic-polymnie (play 9))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def spiky-terpsichore (play 10))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def gold-slow (play 11))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (def irma-mp3 (play 12))
+
+#+END_SRC
+**** irma thomas
+
+#+BEGIN_SRC clojure :results silent
+(def irma (load-sample "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/full-time-mono.wav"))
+#+END_SRC
+
+
+* systematize use of knob and pad abstractions
+** explain use of functions passed to ON-EVENT event-handlers
+any key on your MIDI controller has basically two pieces of data associated with it:
+
+- "note" :: a value or name that stays constant
+- "velocity" :: a value that typically changes, but can be more
+     complicated depeding on what kind of "note" event it is
+     associated with
+
+A function that responds to a given key has to do a few things.
+
+First of all, it needs to be included as part of an event-handler, which is created with "on-event," and will be given a keyword name.
+
+The function that drives the event-handling can do a variety of things, and should in most cases have several parameters.
+
+- synth :: we can control any of a variety of synths/instruments
+- synth-param :: we want to specify which parameter to control
+- controller (pad/knob) number :: which MIDI button to respond to
+- place :: the "ref" or "atom" to use for "dereferencing"
+- channel :: MIDI messages can be sent via different channels
+     (typically 0 or 1 will be default)
+
+Now, depending on what kind of behavior we want out of our controller button, we will need at least one more parameter.
+
+In the case of a knob, which will be turned and will run through a continuous stream of numbers, we will seek to continually set the "place" which stores the value for that knob. That is, we will "reset!" the ref.
+
+In the case of a pad, we might choose to ignore the "velocity" (that is, how "hard" we strike the pad, which can be hard to execute precisely each time and is thus subject to some randomness) and simply use it as "bang." That is, we just tell it to "activate" something.
+
+It can "activate" anything you can imagine that will respond to being "hit." I've used it to "increment/decrement" some value. While a knob ostensibly does the same thing, "banging" a value up or down allows for more precise, fine-grain control. Additionally, it is not subject to the 0-127 values associated with a knob.
+
+So, in the case of using a pad as part of a "counter," we need to pass a "swap!" function, that is, a function to use with =swap!= to adjust the value associated with the current state of the pad. The simplest thing is to just =inc= or =dec= the value.
+
+Whatever particular operation we use the controller to perform, we will always be setting and resetting some value, and it is ideal to be able to know what that value is, as we update it. So, we will want to print out the value everytime it changes.
+
+Of course, all this will appear to happen simultaneously, but this illusion is actually created by wrapping all of these actions into a =do= block, which carries out each action sequentially. Setting the value of "a piece of state" has to happen before we can use that value, so the "setter" will always precede the =ctl= that actually does something with those values.
+
+The "getting" of the value (note the "set/get" binary, which is just one conceptually straightforward way to break down change within this system) happens with =deref= which always returns the current value of a "piece of state." This value will be used with some parameter as named by a /keyword/ that comes from what keywords were given to whichever synth we originally defined.
+
+One last thing to note with the "knob-resetter" is that it takes an optional "scale" argument. This is a bit of a hack that modifies the way that the 0-127 values are translated into the synth. Another way to do this, that may or may not be better depending, would be to use the actual =scale= function that comes with overtone.
+
+Now, when it comes refactoring in general, we might want to think about what kind of (and how much) work a particular function used by the event handler is doing. The following questions might arise:
+
+- Can we print out a more helpful name than the clojure reference?
+- How many event handlers is it reasonable to instantiate? 
+- Does it make sense to always use =if= and =cond= logic?
+- Are there any drawbacks to performing many actions in a =do= block?
+- How well do we understand concurrency? Should we be using a =dosync=
+  block?
+
+** steps
+consolidated steps:
+
+
+Is soundflower running? 
+Is audacity running? 
+How will you be connecting to a sc server--internally or externally? (Do you want to
+be running a pscope?
+
+Is your namespace confused? (Can be an issue, esp. when working with
+babel blocks).
+
+make sure MIDI controllers are connected and activated
+[[id:2A392B91-CD13-41A8-ADA1-00891B6B072F][are you connected to a controller?]]
+
+make sure buffers are loaded with sound files and play back:
+[[id:19C65970-C333-4D09-AD7B-31C158D9C120][make sure buffer was loaded]]
+
+create instrument for granular synth with goldberg:
+[[id:F2B83957-0823-4B8B-A77A-4F7D8080B0B9][def an instrument for playing with parameters to TGrains]]
+
+make sure pad and knob refs are defined
+[[id:B3DB9C3B-4F2B-40D4-B16C-DF3047C968D9][define atoms for two sets of channels and CC messages]]
+
+
+define functions for knob and pad usage:
+[[id:C945047A-E0FD-439C-9354-6F8CA4989DAE][full knob and pad abstraction]]
+
+start with a given set of event handlers
+[[id:F51E8E40-9886-45B3-A06F-7C64DAD2FE7A][create event-handlers for general-tgrains]]
+
+
+start up a granular synth instance
+[[id:AD3B833A-363B-410D-A18E-348F8D7D4182][play goldberg with general-tgrains granular synth]]
+[[id:44B87F5F-FCA4-4451-A91C-A2DCD2F9F714][play yancey]]
+
+Play with controller and view values you are using
+[[id:119605DE-9AD4-4818-B921-3E6B76396D6C][monitor current state of refs]]
+
+add yancey versions on channel 2
+[[id:23951DB5-0EEC-4CB4-B949-C728F4CF2A2D][define control-change knobs for goldberg and Channel 1]]
+** improvements, expansions and refactorings desired
+- make it easy to start up a variety of given projects with their
+  related synths to be manipulated by a common set of controller abstractions
+
+- streamline the process of developing and exploring new synth structures
+
+  - translate more Supercollider Tour of UGens synths to overtone
+
+- play back more than one sound file at a time
+
+  - use Yancey and Goldberg
+
+- use busses and various effects pipelines
+
+- program additional functions for MIDI keys and remaining "five-way
+  buttons" interface (Up-down left-right bang)
