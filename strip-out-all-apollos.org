@@ -1,0 +1,2248 @@
+* Unknown
+** Current Issues in overtone projects development
+*** set up a running overtone music-making environment
+**** Project: update and translate old Pd work into Overtone
+***** recurring pd patching features
+- keyboard interaction
+- toggling and slider menu through various options
+- filtered sawtooth
+- simple reverb and delay
+- pitch selections based on set theoretical tools
+- simple timing "bangs," "metros" and "meta-metros"
+
+*** develop a consistent interface DAW tool set
+**** Interact with and without MIDI controllers
+*** return to Incarnation-Apollo project after days of absence
+**** TODO How do you make progress on a complex project?
+Give yourself a simpler set of recent code you've run in, say, the
+cider-scratch.
+
+This involves perhaps saving blocks of overtone code into dated org
+mode nodes. Like, what is a minimal amount of work you've done?
+
+Use links to commonly recurring chunks of text and then add in
+anything you've liked in the cider-scratch buffer
+
+This takes some discipline!
+
+**** some recent work: final-tgrain-controller-abstraction [2017-01-24 Tue]
+- use Thread/sleep to acheive primitive timing functionality
+  - sleeping, however, blocks access to the repl, which means calling
+    it with repeatedly blocks for the duration of all the repeats!
+- use MIDI keyboard to trigger various centerpos starting points
+  - requires a good CC on-event abstraction function [done]
+- still nice to have /some/ line auto random playing
+- must be able to easily remove nodes and event-handlers
+
+
+** load up Overtone-Incarnation related files
+*** switch to project directory and start up cider/jvm
+What are the best current org files for doing Incarnation work?
+
+Documentation of Overtone:
+[[file:~/Github-repos/post-tonal-overtone/src/post_tonal_overtone/org_files/simplest-org-documentation/][file:~/Github-repos/post-tonal-overtone/src/post_tonal_overtone/org_files/simplest-org-documentation/]]
+
+*** copy code blocks to registers and load kmacros
+[[id:94F9064E-DB8E-4897-A6C2-94467527BAED][keyboard macro to stop sound]]
+
+#+BEGIN_SRC clojure :results silent
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results output
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results output
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+
+#+END_SRC
+
+#+BEGIN_SRC clojure
+
+#+END_SRC
+*** go to "Apollo" Incarnation project restart
+[[id:62220D41-AE0A-4D5F-B2D6-6B100610A89B][preferred sequence for loading apollo and other incarnation samples]]
+
+falls within the 
+[[id:DFFB3F5A-370C-4D2A-BA61-685E4B73CCAC][Apollo-overtone restart essentials]]
+
+of apollo-overtone in the apollo-supercollider github repo
+
+
+#+BEGIN_SRC clojure :results silent
+(sc-osc-debug-on)
+#+END_SRC
+*** Use MIDI controller with new random granular synths!
+[[id:EEC0B1AC-D5F4-40F8-ACDF-629441E38812][define refs (for full composing with high-level granular synth)]]
+
+
+
+** TODO refactor longer Axiom example
+*** wish list
+- better println stringified results when dereferencing cc-channel refs
+- fix altering two ref with one knob
+  - prefer different MIDI channels
+  - consider re-using old, pad inc/dec technique
+- a better way to do many times:
+
+#+BEGIN_SRC clojure
+(ctl active-synth :cc0-2 (scale-range vel 1 127 @cc0-2-lo @cc0-2-hi))
+#+END_SRC
+
+Particularly to reset the @lo and @hi dynamically or at least conveniently
+Cuz this is not it:
+#+BEGIN_SRC clojure
+(do (reset! cc0-1-lo (scale-range vel 1 127 20 200))
+    (reset! cc0-2-lo (scale-range vel 1 127 0.5 10)) 
+    (println (str @cc0-1-lo) (str @cc0-2-lo)))
+#+END_SRC
+
+
+** recording
+#+BEGIN_SRC clojure
+;;  (recording-start "~/Google Drive/ministrings.wav")
+;; (recording-start "~/Google Drive/static-yancey-goldberg4.wav")
+(recording-start "~/Google Drive/static-yancey-goldberg5.wav")
+#+END_SRC
+
+#+RESULTS:
+: :recording-started
+
+#+NAME: stop-recording
+#+BEGIN_SRC clojure
+  (recording-stop)
+#+END_SRC
+
+#+RESULTS: stop-recording
+: /Users/a/Google Drive/static-yancey-goldberg5.wav
+
+#+RESULTS:
+: /Users/a/Google Drive/yancey-reich.wav
+
+
+** all restart block
+*** fundamentals to restarting incarnation
+
+#+NAME: restart-overtone
+#+BEGIN_SRC clojure :results silent
+(use 'overtone.live)
+;; (use 'overtone.studio.scope)
+;; (pscope)
+(demo (sin-osc))
+#+END_SRC
+
+#+NAME: load-incarnation-samples
+#+BEGIN_SRC clojure :results silent
+
+(def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
+(def path-to-mono (str path-to-sounds "sounds/all-mono/"))
+
+  (def variation1 (load-sample (str path-to-mono "apollo-variation1-mono.wav")))
+  (def variation2 (load-sample (str path-to-mono "apollo-variation2-mono.wav")))
+  (def apotheose (load-sample (str path-to-mono "apotheose-mono.wav")))
+  (def calliope (load-sample (str path-to-mono "calliope-mono.wav")))
+  (def coda (load-sample (str path-to-mono "coda-mono.wav")))
+  (def yancey  (load-sample (str path-to-mono "how-long-slowest-mono.wav")))
+  (def naissance (load-sample (str path-to-mono "naissance-mono.wav")))
+  (def pas-daction (load-sample (str path-to-mono "pas-daction-real-mono.wav")))
+  (def pas-deux (load-sample (str path-to-mono "pas-de-deux-mono1.wav")))
+  (def polymnie (load-sample (str path-to-mono "polymnie-mono.wav")))
+  (def terpsichore (load-sample (str path-to-mono "terpsichore-mono.wav")))
+  ;; not in all-mono dir?
+  (def goldberg-slow (load-sample "~/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav"))
+  (def irma (load-sample (str path-to-sounds "sounds/full-time-mono.wav")))
+
+(sc-osc-debug-on)
+
+(midi-connected-devices)
+#+END_SRC
+
+#+CALL: list-all-cc()
+#+CALL: list-all-cc-remove()
+*** some recent straight buffer replays
+   :PROPERTIES:
+   :DATE_CREATED: [2017-03-07 Tue 15:29]
+   :END:
+#+CALL: play()
+
+#+BEGIN_SRC clojure :results silent
+(play 2)
+#+END_SRC
+
+#+NAME: play-yancey-straight
+#+BEGIN_SRC clojure :results silent
+(play yancey)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(play goldberg-slow)
+#+END_SRC
+*** granular synth replays
+#+CALL: mouse-rand-grain2-def()
+
+
+Definition within
+[[id:95FDE12A-8C18-42A9-8500-5619E3ACF461][interesting use of interaction and randomness (muose-rand-grain2 uses =line=)]]
+
+#+BEGIN_SRC clojure :results silent
+(def a-gran (mouse-rand-grain2
+             :buffer
+             ;; 2
+             
+             ))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl a-gran :trate 10)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl a-gran :dur-numerator 24)
+#+END_SRC
+
+#+CALL: mouse-rand-grain3-def()
+#+CALL: minirand-ccgrain-no-line()
+#+CALL: cc-minilogue1-grains-event-handler()
+#+CALL: apotheose-cloud()
+#+CALL: apotheose-cloud-handler()
+
+*** use refs in place of hard-coded target scale-ranges :codesketch:minilogue:
+The key is to use dereferencing in the event-handler definition!
+The problem is tailoring each ref to every case of an event that might
+arise!
+
+#+BEGIN_SRC clojure :results silent
+(defn cc-minilogue1-grains-use-refs [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       34 (some-fn)
+       35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+       36 (ctl active-synth :cc36 (scale-range vel 1 127 0 100)) 
+;; consider the following for a choppier, but actual buf-dur length
+;; (ctl active-synth :cc36 (scale-range vel 1 127 0 190))
+       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+       41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+       :else nil
+       ))
+   double-colon-name))
+
+(defn some-fn [] (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn thirty-four [vel] (println "thirty four is " (str vel)))
+(defn thirty-five [vel] (println "thirty five is " (str vel)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn thirty-four [active-synth vel] (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10)))
+(defn thirty-five [active-synth vel] (ctl active-synth :cc35 (scale-range vel 1 127 0.5 24)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(defn simple-drop-in-event-handler [active-synth double-colon-name]
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note vel :velocity}]
+              (case cc-channel
+                34 (thirty-four active-synth vel)
+                35 (thirty-five active-synth vel)))
+            double-colon-name))
+#+END_SRC
+
+
+
+#+BEGIN_SRC clojure :results silent
+(def obessive (minirand-ccgrain-no-line 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(simple-drop-in-event-handler obessive ::obess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::obess)
+#+END_SRC
+
+
+
+
+** using OSC for communication with Processing
+*** define an osc-server and listener
+#+BEGIN_SRC clojure 
+(def server (osc-server 55450))
+(osc-listen server (fn [msg] (println "Listener: " msg)) :debug)
+#+END_SRC
+
+
+** new section for supercollider bus examples                      :noexport:
+*** studio* at startup of overtone
+#+BEGIN_SRC clojure
+#atom[{:synth-group nil,
+       :instruments {},
+       :instrument-group #<synth-group[live]: Studio 31>,
+       :master-volume 0.8, :input-gain 1,
+       :bus-mixers {:in (#<synth-node[live]: overtone.studiod9b/in-bus-mixer 23>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 24>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 25>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 26>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 27>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 28>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 29>
+                                     #<synth-node[live]: overtone.studiod9b/in-bus-mixer 30>),
+                    :out (#<synth-node[live]: overtone.studid9b/out-bus-mixer 15>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 16>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 17>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 18>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 19>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 20>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 21>
+                                      #<synth-node[live]: overtone.studid9b/out-bus-mixer 22>)},
+       :recorder nil} 0x111b613c]
+#+END_SRC
+
+#+BEGIN_SRC clojure :results output
+(pp-node-tree)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+{:type :group,
+ :id 4,
+ :name "Overtone Root",
+ :children
+ ({:type :group, :id 31, :name "Studio", :children nil}
+  {:type :group,
+   :id 5,
+   :name "Overtone User",
+   :children
+   ({:type :group,
+     :id 6,
+     :name "Overtone Safe Pre Default",
+     :children nil}
+    {:type :group, :id 7, :name "Overtone Default", :children nil}
+    {:type :group,
+     :id 8,
+     :name "Overtone Safe Post Default",
+     :children nil})})}
+#+end_example
+
+*** supercollider
+
+
+
+#+BEGIN_SRC sclang :tangle no
+SynthDef("tutorial-Rand", { Out.ar(0, SinOsc.ar(Rand(440, 660), 0, 0.2)) }).add;
+
+(
+// the arg direct will control the proportion of direct to processed signal
+SynthDef("tutorial-DecayPink", { arg outBus = 0, effectBus, direct = 0.5;
+    var source;
+    // Decaying pulses of PinkNoise. We'll add reverb later.
+    source = Decay2.ar(Impulse.ar(1, 0.25), 0.01, 0.2, PinkNoise.ar);
+    // this will be our main output
+    Out.ar(outBus, source * direct);
+    // this will be our effects output
+    Out.ar(effectBus, source * (1 - direct));
+}).add;
+
+SynthDef("tutorial-DecaySin", { 
+	arg outBus = 0, effectBus, direct = 0.5, 
+	sinmul = 110, sinadd = 440, sinrate = 0.2, sinphase = 0, 
+	impulserate1 = 0.3, impulserate2 = 0.25, impulse_phase = 0.3, impulse_mul = 1;
+    var source;
+    // Decaying pulses of a modulating sine wave. We'll add reverb later.
+    source = Decay2.ar(Impulse.ar(impulserate1, impulserate2), impulse_phase, impulse_mul, SinOsc.ar(SinOsc.kr(sinrate, 1, sinmul, sinadd)));
+    // this will be our main output
+    Out.ar(outBus, source * direct);
+    // this will be our effects output
+    Out.ar(effectBus, source * (1 - direct));
+}).add;
+
+SynthDef("tutorial-Reverb", { arg outBus = 0, inBus;
+    var input;
+    input = In.ar(inBus, 1);
+
+    // a low-rent reverb
+    // aNumber.do will evaluate its function argument a corresponding number of times
+    // {}.dup(n) will evaluate the function n times, and return an Array of the results
+    // The default for n is 2, so this makes a stereo reverb
+    2.do({ input = AllpassC.ar(input, 0.04, { Rand(0.001,0.04) }.dup, 3)});
+
+    Out.ar(outBus, input);
+}).add;
+
+b = Bus.audio(s,1); // this will be our effects bus
+)
+
+(
+x = Synth.new("tutorial-Reverb", [\inBus, b]);
+y = Synth.before(x, "tutorial-DecayPink", [\effectBus, b]);
+z = Synth.before(x, "tutorial-DecaySin", [\effectBus, b, \outBus, 1]);
+)
+
+// Change the balance of wet to dry
+y.set(\direct, 1); // only direct PinkNoise
+z.set(\direct, 1); // only direct Sine wave
+
+z.set(\sinmul, 220);
+
+z.set(\sinrate, 0.01);
+
+z.set(\impulserate1, 0.5);
+
+z.set(\impulserate2, 0.1);
+
+y.set(\direct, 0); // only reverberated PinkNoise
+z.set(\direct, 0); // only reverberated Sine wave
+x.free; y.free; z.free; b.free;
+
+Decay.ar(in, decayTime, mul, add)
+Decay2.ar(in, attackTime, decayTime, mul, add)
+Dust.ar(density, mul, add)
+Impulse.ar(freq, phase, mul, add)
+AllpassC.ar(in, maxdelaytime, delaytime, decaytime, mul, add)
+#+END_SRC
+** DEPRECATE?
+
+
+
+
+** begin making sound with sound files
+  :PROPERTIES:
+  :header-args: :results silent
+  :END:
+
+*** note: most of this current (apollo-overtone?) file is now to be archived
+
+see final-tgrain-controller-abstraction.org 
+
+[[id:72B246E0-F6CF-4AC8-8113-C1CE8F83572B][preliminaries]] this is really just loading apollo soundfiles as (probably already) done above. 
+
+Move on to synthdefs below.
+
+And consider closing this file? Useful at least to refer back to
+buffer info
+
+
+*** consider what synths to use
+[[id:94621238-5BF8-497B-96CE-8E1CB951311A][define synths (taken from =granular-synth-focused.org=)]]
+
+- general-tgrains :: used by all the event-handlers below??
+- general-tgrains-synth :: preferred in later files; uses =out=
+- tgrains-line-synth ::
+- slow-grain-reverb ::
+- general-trand-synth- :: 
+
+
+*** def an instrument for playing with parameters to TGrains
+:PROPERTIES:
+:ID:       F2B83957-0823-4B8B-A77A-4F7D8080B0B9
+:END:
+mono output, should use pan2
+#+BEGIN_SRC clojure
+    (definst general-tgrains [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+      (let [trate trate
+            dur (/ dur-numerator trate)
+            clk (impulse:ar trate)
+            centerpos centerpos]
+        (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2)))
+#+END_SRC
+
+
+*** add cc control to t-grains (trate with CC, pos with Mouse-x)
+
+#+BEGIN_SRC clojure :results silent
+(general-tgrains 0 :trate 0.4 :amp 0.4)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(general-tgrains 1 :trate 0.1)
+#+END_SRC
+
+examples of centerpos arguments and trate arguments!
+
+#+BEGIN_SRC clojure :results silent
+[centerpos-mouse (mouse-x:kr 0 (buf-dur:kr b))]
+[centerpos-line  (line 0 (buf-dur:kr 0) 500) ]
+#+END_SRC
+
+
+
+
+
+
+** systematically create event-handlers for general-tgrains on channels 1 and 2
+:PROPERTIES:
+:ID:       F51E8E40-9886-45B3-A06F-7C64DAD2FE7A
+:VISIBILITY: children
+:END:
+
+*** uses abstractions defined above--see 'steps'
+see some steps node somewhere (in more-advanced-overtone-exploring.org) 
+
+lays out a process of
+getting going with goldberg aria
+
+
+*** define control-change knobs for goldberg and Channel 1
+:PROPERTIES:
+:ID:       23951DB5-0EEC-4CB4-B949-C728F4CF2A2D
+:END:
+
+#+BEGIN_SRC clojure
+  (on-event [:midi :control-change]
+            (reset-knob general-tgrains :buffer 1 :amp 2 :place cc2-2 :midi-channel 2 :scale 0.01)
+            ::yancey-amp-knob2)
+
+  (on-event [:midi :control-change]
+;; um, is this missing a ":place" keyword argument before cc1-2?
+            (reset-knob general-tgrains :buffer 1 :centerpos 1 cc1-2 :midi-channel 2 :scale 0.5)
+            ::yancey-centerpos-knob1)
+#+END_SRC
+
+#+RESULTS:
+: :added-async-handler
+
+
+*** define pads
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :centerpos 38 pad3-1 inc 1)
+            ::yancey-centerpos-pad3-inc)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :centerpos 39 pad3-1 dec 1)
+            ::yancey-centerpos-pad4-dec)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :dur-numerator 36 pad1-1 inc 1)
+            ::yancey-durnumerator-pad1)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :dur-numerator 37 pad1-1 dec 1)
+            ::yancey-durnumerator-pad2)
+
+(on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :trate 42 pad7-1 (fn [x] (+ 0.1 x)) 1)
+            ::yancey-trate-pad7-inc)
+
+  (on-event [:midi :note-on]
+            (swap-pad general-tgrains :buffer 1 :trate 43 pad7-1 (fn [x] (- x 0.1)) 1)
+            ::yancey-trate-pad8-dec)
+#+END_SRC
+
+
+*** remove event handlers for goldberg
+#+BEGIN_SRC clojure
+(remove-event-handler ::yancey-amp-knob2)
+(remove-event-handler ::yancey-centerpos-knob1)
+(remove-event-handler ::yancey-centerpos-pad3-inc)
+(remove-event-handler ::yancey-centerpos-pad4-dec)
+(remove-event-handler ::yancey-durnumerator-pad1)
+(remove-event-handler ::yancey-durnumerator-pad2)
+(remove-event-handler ::yancey-trate-pad7-inc)
+(remove-event-handler ::yancey-trate-pad8-dec)
+#+END_SRC
+
+
+** translate goldberg and yancey to overtone
+
+*** check loaded buffers for incarnation
+
+[[id:19C65970-C333-4D09-AD7B-31C158D9C120][make sure buffer was loaded]] as above
+
+#+RESULTS:
+
+Basic playback of a loaded buffer
+
+#+BEGIN_SRC clojure :results silent
+(definst playback-buf [bufname 0] (play-buf 1 bufname))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(playback-buf yancey)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(playback-buf goldberg-slow)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(buffer-info goldberg-slow)
+#+END_SRC
+
+#+RESULTS:
+: #<buffer-info: 184.540590s mono 0>
+
+#+BEGIN_SRC clojure
+(buffer-info yancey)
+#+END_SRC
+
+#+RESULTS:
+: #<buffer-info: 272.938163s mono 1>
+
+
+*** supercollider yancey and goldberg synth version
+#+BEGIN_SRC sclang
+  (
+    // add buffer argument
+    SynthDef(\yancey_synth,
+        {
+            arg trate = 2,
+            dur = 2,
+            centerpos = 1000,
+            // buffer = ~yancey.bufnum,
+            buffer = 7,
+            amp = 0.5;
+            Out.ar(0, TGrains.ar(2, Impulse.ar(trate), buffer, 1, centerpos, dur, 0, amp, 2))
+        }).add;
+    );
+
+  (
+    // add buffer argument
+    SynthDef(\goldberg_synth,
+        {
+            arg trate = 2,
+            dur = 2,
+            centerpos = 1000,
+            // buffer = ~goldberg.bufnum,
+            buffer = 3, 
+            amp = 0.5;
+            Out.ar(0, TGrains.ar(2, Impulse.ar(trate), buffer, 1, centerpos, dur, 0, amp, 2))
+        }).add;
+    );
+
+// broadcasting on channel 4 
+    MIDIdef.cc(\yancey_TRate, {arg args; h.set(\trate, args / 127)}, 1, 4);
+    MIDIdef.cc(\yancey_Dur, {arg args; h.set(\dur, args * 0.5)}, 2, 4);
+
+    MIDIdef.cc(\yancey_Center, {arg args; h.set(\centerpos, args * 1000)}, 3, 4);
+    MIDIdef.cc(\yancey_Amp, {arg args; h.set(\amp, args / 127)}, 4, 4);
+
+    MIDIdef.cc(\goldberg_TRate, {arg args; i.set(\trate, args / 127)}, 5, 4);
+    MIDIdef.cc(\goldberg_Dur, {arg args; i.set(\dur, args * 0.5)}, 6, 4);
+
+    MIDIdef.cc(\goldberg_Center, {arg args; i.set(\centerpos, args * 1000)}, 7, 4);
+    MIDIdef.cc(\goldberg_Amp, {arg args; i.set(\amp, args / 127)}, 8, 4);
+
+    h = Synth(\yancey_synth);
+
+    i = Synth(\goldberg_synth);
+#+END_SRC
+
+
+** relevant apollo and incarnations soundfiles
+
+*** directories
+[[file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/][file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/]]
+[[file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/all-mono/][file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/all-mono/]]
+[[file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/apollo-tracks/][file:/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/apollo-tracks/]]
+
+*** supercollider Buffer.read en masse
+#+BEGIN_SRC sclang
+  ~variation1 = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/apollo-variation1-mono.wav");
+  ~variation2 = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/apollo-variation2-mono.wav");
+  ~yancey = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/how-long-slowest-mono.wav");
+  ~goldberg = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/goldberg-slow-mono.wav");
+  ~apotheose = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/apotheose-mono.wav");
+  ~calliope = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/calliope-mono.wav");
+  ~coda = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/coda-mono.wav");
+  ~yancey = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/how-long-slowest-mono.wav");
+  ~naissance = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/naissance-mono.wav");
+  ~action = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/pas-d'action-mono.wav");
+  ~deux = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/pas-de-deux-mono.wav");
+  ~poly = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/polymnie-mono.wav");
+  ~terpsichore = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/terpsichore-mono.wav");
+#+END_SRC
+
+
+** consolidate steps into large org blocks for restarts (in progress)
+
+*** [#B] a start (too large)
+
+#+BEGIN_SRC clojure
+  (use 'overtone.live)
+
+
+
+
+  (def goldberg-slow (load-sample "/Users/b/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav"))
+
+  (def yancey (load-sample "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/sounds/all-mono/how-long-slowest-mono.wav"))
+
+
+  (definst general-tgrains [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:ar trate)
+          centerpos centerpos]
+      (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2)))
+
+
+  (def cc1-1 (atom 0))
+  (def cc2-1 (atom 0))
+  (def cc3-1 (atom 0))
+  (def cc4-1 (atom 0))
+  (def cc5-1 (atom 0))
+  (def cc6-1 (atom 0))
+  (def cc7-1 (atom 0))
+  (def cc8-1 (atom 0))
+  (def cc1-2 (atom 0))
+  (def cc2-2 (atom 0))
+  (def cc3-2 (atom 0))
+  (def cc4-2 (atom 0))
+  (def cc5-2 (atom 0))
+  (def cc6-2 (atom 0))
+  (def cc7-2 (atom 0))
+  (def cc8-2 (atom 0))
+
+  (def pad1-1 (atom 0))
+  (def pad2-1 (atom 0))
+  (def pad3-1 (atom 0))
+  (def pad4-1 (atom 0))
+  (def pad5-1 (atom 0))
+  (def pad6-1 (atom 0))
+  (def pad7-1 (atom 0))
+  (def pad8-1 (atom 0))
+  (def pad1-2 (atom 0))
+  (def pad2-2 (atom 0))
+  (def pad3-2 (atom 0))
+  (def pad4-2 (atom 0))
+  (def pad5-2 (atom 0))
+  (def pad6-2 (atom 0))
+  (def pad7-2 (atom 0))
+  (def pad8-2 (atom 0))
+
+#+END_SRC
+
+#+RESULTS:
+: nil({:description "Axiom A.I.R. Mini32 MIDI", :vendor "M-Audio", :sinks 0, :sources 2147483647, :name "MIDI", :overtone.studio.midi/full-device-key [:midi-device "M-Audio" "MIDI" "Axiom A.I.R. Mini32 MIDI" 0], :info #object[com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x532c970a "MIDI"], :overtone.studio.midi/dev-num 0, :device #object[com.sun.media.sound.MidiInDevice 0x5762a89f "com.sun.media.sound.MidiInDevice@5762a89f"], :version "Unknown version"} {:description "Axiom A.I.R. Mini32 HyperControl", :vendor "M-Audio", :sinks 0, :sources 2147483647, :name "HyperControl", :overtone.studio.midi/full-device-key [:midi-device "M-Audio" "HyperControl" "Axiom A.I.R. Mini32 HyperControl" 0], :info #object[com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x43848397 "HyperControl"], :overtone.studio.midi/dev-num 0, :device #object[com.sun.media.sound.MidiInDevice 0x264f265d "com.sun.media.sound.MidiInDevice@264f265d"], :version "Unknown version"})#'user/goldberg-slow#'user/yancey#<instrument: general-tgrains>#'user/cc1-1#'user/cc2-1#'user/cc3-1#'user/cc4-1#'user/cc5-1#'user/cc6-1#'user/cc7-1#'user/cc8-1#'user/cc1-2#'user/cc2-2#'user/cc3-2#'user/cc4-2#'user/cc5-2#'user/cc6-2#'user/cc7-2#'user/cc8-2#'user/pad1-1#'user/pad2-1#'user/pad3-1#'user/pad4-1#'user/pad5-1#'user/pad6-1#'user/pad7-1#'user/pad8-1#'user/pad1-2#'user/pad2-2#'user/pad3-2#'user/pad4-2#'user/pad5-2#'user/pad6-2#'user/pad7-2#'user/pad8-2
+
+#+BEGIN_SRC clojure
+    (defn reset-knob [synth synth-param knob-number place midi-channel & {:keys [scale]
+                                                                          :or {scale 1}}]
+        (fn [{knob :note val :velocity chan :channel}]
+          (if (= chan midi-channel)
+            (cond (= knob knob-number)
+                  (do (reset! place (* val scale))
+                      (ctl synth (keyword synth-param) (deref place))
+                      (println (str synth-param knob-number " : ") (deref place)))))))
+
+
+
+
+    (defn swap-pad [synth synth-param pad-number place swap-fn midi-channel]
+        (fn [{pad :note val :velocity chan :channel}]
+          (if (= chan midi-channel)
+            (cond (= pad pad-number)
+                  (do (swap! place swap-fn)
+                      (ctl synth (keyword synth-param) (deref place))
+                      (println (str synth-param pad-number " : ") (deref place)))))))
+    
+
+
+    (on-event [:midi :control-change]
+              (reset-knob general-tgrains :buffer 0 :amp 2 cc2-1 1 :scale 0.01)
+              ::amp-knob2)
+
+    (on-event [:midi :control-change]
+              (reset-knob general-tgrains :buffer 0 :centerpos 1 cc1-1 1 :scale 0.5)
+              ::centerpos-knob1)
+
+
+    (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :centerpos 38 pad3-1 inc 1)
+              ::centerpos-pad3-inc)
+
+    (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :centerpos 39 pad3-1 dec 1)
+              ::centerpos-pad4-dec)
+
+    (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :dur-numerator 36 pad1-1 inc 1)
+              ::durnumerator-pad1)
+
+    (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :dur-numerator 37 pad1-1 dec 1)
+              ::durnumerator-pad2)
+
+  (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :trate 42 pad7-1 (fn [x] (+ 0.1 x)) 1)
+              ::trate-pad7-inc)
+
+    (on-event [:midi :note-on]
+              (swap-pad general-tgrains :buffer 0 :trate 43 pad7-1 (fn [x] (- x 0.1)) 1)
+              ::trate-pad8-dec)
+
+
+    (on-event [:midi :control-change]
+              (reset-knob general-tgrains :buffer 1 :amp 2 :place cc2-2 :midi-channel 2 :scale 0.01)
+              ::yancey-amp-knob2)
+
+    (on-event [:midi :control-change]
+              (reset-knob general-tgrains :buffer 1 :centerpos 1 cc1-2 2 :scale 0.5)
+              ::yancey-centerpos-knob1)
+#+END_SRC
+
+#+RESULTS:
+: ({:description "Axiom A.I.R. Mini32 MIDI", :vendor "M-Audio", :sinks 0, :sources 2147483647, :name "MIDI", :overtone.studio.midi/full-device-key [:midi-device "M-Audio" "MIDI" "Axiom A.I.R. Mini32 MIDI" 0], :info #object[com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x5386ff43 "MIDI"], :overtone.studio.midi/dev-num 0, :device #object[com.sun.media.sound.MidiInDevice 0x7bf18b15 "com.sun.media.sound.MidiInDevice@7bf18b15"], :version "Unknown version"} {:description "Axiom A.I.R. Mini32 HyperControl", :vendor "M-Audio", :sinks 0, :sources 2147483647, :name "HyperControl", :overtone.studio.midi/full-device-key [:midi-device "M-Audio" "HyperControl" "Axiom A.I.R. Mini32 HyperControl" 0], :info #object[com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x77743fc8 "HyperControl"], :overtone.studio.midi/dev-num 0, :device #object[com.sun.media.sound.MidiInDevice 0x68bfe7ec "com.sun.media.sound.MidiInDevice@68bfe7ec"], :version "Unknown version"})#'user/goldberg-slow#'user/yancey#<instrument: general-tgrains>#'user/cc1-1#'user/cc2-1#'user/cc3-1#'user/cc4-1#'user/cc5-1#'user/cc6-1#'user/cc7-1#'user/cc8-1#'user/cc1-2#'user/cc2-2#'user/cc3-2#'user/cc4-2#'user/cc5-2#'user/cc6-2#'user/cc7-2#'user/cc8-2#'user/pad1-1#'user/pad2-1#'user/pad3-1#'user/pad4-1#'user/pad5-1#'user/pad6-1#'user/pad7-1#'user/pad8-1#'user/pad1-2#'user/pad2-2#'user/pad3-2#'user/pad4-2#'user/pad5-2#'user/pad6-2#'user/pad7-2#'user/pad8-2#'user/reset-knob#'user/swap-pad:added-async-handler:added-async-handler:added-async-handler:added-async-handler
+
+*** [#C] use two different channels for modifying the two different synths
+
+buffers "gold" and "yanc" are associated with two synths, and play
+back here requires switching from channel one to channel two 
+
+Unnecessary? Inconvenient.
+#+BEGIN_SRC clojure
+  (on-event [:midi :control-change]
+            (old-reset-knob gold :amp 2 cc2-1 1 :scale 0.01)
+            ::old-amp-knob2-gold)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob gold :centerpos 1 cc1-1 1 :scale 0.5)
+            ::old-centerpos-knob1-gold)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc :amp 2 cc2-2 2 :scale 0.01)
+            ::old-amp-knob2-yanc)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc :centerpos 1 cc1-2 2 :scale 0.5)
+            ::old-centerpos-knob1-yanc)
+#+END_SRC
+
+Use one-channel but inc/dec more than two parameters per synth
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc :centerpos 38 pad3-1 inc 1)
+            ::yancey-centerpos-pad3-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad general-tgrains :buffer 1 :centerpos 39 pad3-1 dec 1)
+            ::yancey-centerpos-pad4-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad general-tgrains :buffer 1 :dur-numerator 36 pad1-1 inc 1)
+            ::yancey-durnumerator-pad1)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad general-tgrains :buffer 1 :dur-numerator 37 pad1-1 dec 1)
+            ::yancey-durnumerator-pad2)
+
+(on-event [:midi :note-on]
+            (old-swap-pad general-tgrains :buffer 1 :trate 42 pad7-1 (fn [x] (+ 0.1 x)) 1)
+            ::yancey-trate-pad7-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad general-tgrains :buffer 1 :trate 43 pad7-1 (fn [x] (- x 0.1)) 1)
+            ::yancey-trate-pad8-dec)
+#+END_SRC
+
+** Misc. notes and tangents on tgrain project
+
+
+*** [#B] (fun!) create JVM timings using Sleeps and future?
+**** process for functioning automated playback fn
+***** choose buffer for playback
+#+BEGIN_SRC clojure :results silent
+(def var1 (general-tgrains-synth 0))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def var2 (general-tgrains-synth 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def apoth (general-tgrains-synth 2))
+#+END_SRC
+***** experiment with ctl of playing back buffer
+#+BEGIN_SRC clojure :results silent
+(ctl var1 :centerpos 10)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var1 :centerpos @current-val)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (do (swap! current-val inc)
+      (ctl var1 :centerpos @current-val))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+  (do (Thread/sleep 5000)
+      (swap! current-val inc)
+      (ctl var1 :centerpos @current-val))
+#+END_SRC
+
+***** [#A] create functions and futures for repeated control
+****** warnings
+Sample must be playing, of course!
+
+Then, you can either call the function or try to realize the future?
+But doing so in the REPL will, of course, block. But doing so from
+org-babel will nrepl time-out and give you back control of your org
+file.
+
+However! It will eat your connection to the cider-repl until...?
+
+Reconsider calling the below with repeatedly 200 times!
+
+For example, this will take 200 * 5 seconds = 1000 seconds = approx 16
+mins but will keep on moving through the piece?
+
+#+BEGIN_SRC clojure :results silent
+;; will block the REPL!
+;; use a future??
+  (defn play-var1 []
+    (repeatedly 200 #(do (Thread/sleep 5000)
+                        (swap! current-val inc)
+                        (ctl var1 :centerpos @current-val))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(play-var1)
+#+END_SRC
+
+****** does using a future do anything helpful?
+
+Futures block once they are dereferenced, it seems?
+
+#+BEGIN_SRC clojure
+  (def var2-future
+    (future 
+      (repeatedly 10 #(do (Thread/sleep 5000)
+                           (swap! current-val inc)
+                           (ctl var2 :centerpos @current-val)))))
+#+END_SRC
+
+#+RESULTS:
+: #'user/var2-future
+
+#+BEGIN_SRC clojure :results silent
+;; need to reset current-val if previously used!
+(def current-val (atom 0))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+@var2-future
+#+END_SRC
+
+****** abstract out number of repeats and "active-synth"
+Hard codes "current val" necessarily, since that is the var we will be
+wanting to save values from??
+
+ #+BEGIN_SRC clojure :results silent
+  (defn my-ctl-line [active-synth sleep-time repeats]
+    (repeatedly repeats
+                #(do (Thread/sleep sleep-time)
+                     (swap! current-val inc)
+                     (ctl active-synth :centerpos @current-val))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (do
+    (def apoth (general-tgrains-synth 2 :trate 0.5))
+    (reset! current-val 0)
+    (my-ctl-line apoth 3000 10))
+#+END_SRC
+
+
+*** preliminaries
+:PROPERTIES:
+:ID:       72B246E0-F6CF-4AC8-8113-C1CE8F83572B
+:END:
+[[id:F50F4B96-20C5-4F82-A29D-88791760D5F5][load all apollo soundfiles into overtone]]
+
+
+*** refactor event handlers!
+**** TODO for refactoring keyboard and CC event-handlers
+- to take synth ugen as argument--must be a macro??
+- print out message with value to STOUT
+- fix "no matching clause" errors for (15,
+- be able to add and remove event-handlers more gracefully
+**** MASTER CONTROL-CHANGE EVENT HANDLER needed!
+Saves values of =current-val= for use as =centerpos= arguments
+
+see [[id:D5F733E4-1698-40FB-8B24-D634FD7B39A5][general CC mesages]] above
+
+
+** define synths (taken from =granular-synth-focused.org=)
+:PROPERTIES:
+:ID:       94621238-5BF8-497B-96CE-8E1CB951311A
+:END:
+see below
+[[file:~/Github-repos/post-tonal-overtone/src/post_tonal_overtone/org_files/simplest-org-documentation/granular-synth-focused.org][file:~/Github-repos/post-tonal-overtone/src/post_tonal_overtone/org_files/simplest-org-documentation/granular-synth-focused.org]]
+
+
+*** new general-tgrains-synth
+   :PROPERTIES:
+   :ID:       798DD90A-4F8E-47B9-A884-EAFA1FC8D7B4
+   :END:
+**** definition
+#+BEGIN_SRC clojure :results silent
+  (defsynth general-tgrains-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:ar trate)
+          centerpos centerpos]
+      (out 0 (pan2 (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2)))))
+#+END_SRC
+**** arguments comprise: buff trate dur-num amp centerpos
+
+
+*** tgrains-line
+   :PROPERTIES:
+   :ID:       1ECD0BBD-2682-4AD4-AE84-C3CB376368AB
+   :END:
+#+BEGIN_SRC clojure :results silent
+  (defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
+    (out 0 (pan2
+            (let [track-len (buf-dur:kr buffer)
+                  trate trate
+                  dur (/ dur-numerator trate)
+                  clk (impulse:ar trate)
+                  centerpos (line:kr centerpos track-len (* duration-mult track-len))  ]
+              (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2)))))
+#+END_SRC
+
+
+*** slow-grain-reverb
+[[id:F109AE32-4289-4A8B-8637-B68D7B4FA5B6][SLOW-GRAIN-REVERB: dedicated instrument abstraction for t-grains synths]]
+
+from granular-synth focused 
+
+
+*** general-trand synth
+[[id:74504A58-C963-4B11-AEE5-6411D5A37CF4][general-tgrains with t-randomness]]
+
+
+*** some new granular synths in steps.org
+ mouse-rand-grain1 and more better below this one!
+[[id:6846EBE5-14EA-4655-8855-1F674FCBAB1D][mouse-rand-grain1]]
+
+
+** load samples with various synths
+
+
+*** load all other apollo samples--see link
+[[id:C99A4AE2-B22E-4F21-88B8-E64B3CC4D6E2][load all apollo soundfiles into overtone]]
+
+
+*** general-tgrains
+#+BEGIN_SRC clojure
+;; if not already loaded
+  (def goldberg-slow (load-sample "/Users/b/Google Drive/Audio_uploads/wav-file-uploads/goldberg-slow-mono.wav"))
+
+
+#+END_SRC
+
+#+RESULTS:
+: #'user/goldberg-slow#'user/gold
+
+#+BEGIN_SRC clojure :results silent
+;; what's in the 11th buffer?
+(def gold (general-tgrains-synth goldberg-slow))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def var1 (general-tgrains-synth 0))
+#+END_SRC
+
+
+*** tgrains-line 
+[[id:326223F4-AA19-4058-A07C-3E5F5DB9AFF5][use lines and scaling and more MIDI buttons]]
+
+#+BEGIN_SRC clojure
+(def var1-line (tgrains-line-synth :buffer goldberg-slow :mult 1))
+#+END_SRC
+
+#+RESULTS:
+: #'user/var1-line
+
+#+BEGIN_SRC clojure :results silent
+(def var3-line (tgrains-line-synth :buffer 7 :mult 1))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(ctl var2-line :buffer 7 :centerpos 0)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var1-line :trate 2)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var2-line :trate 1)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var1-line :duration-mult 1)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var2-line :dur-numerator 2)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def var1-noline (general-tgrains-synth :buffer 0 :centerpos 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl var1-noline :centerpos (line:kr 0 4 20 FREE))
+#+END_SRC
+
+
+*** slow-grain examples
+
+#+BEGIN_SRC clojure :results silent
+(def slowg-pasdeux (slow-grain-reverb :b 8))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl slowg-pasdeux :centerpos 10)
+#+END_SRC
+
+
+
+
+** more general CC handler with defmacro
+  :PROPERTIES:
+  :ID:       18034CBE-5093-4083-8D7A-5E7027482FA4
+  :END:
+#+BEGIN_SRC clojure :results silent
+  (defmacro cc-param-on-eventer [active-synth a-ref tgrain-param knob-num dst-lo-ref dst-hi-ref double-colon-name]
+    (on-event [:midi :control-change]
+              (fn [{note :note vel :velocity}]
+                (let [val (deref a-ref)
+                      dstlo (deref dst-lo-ref) 
+                      dsthi (deref dst-hi-ref)]
+                  (cond (= note knob-num) 
+                        (do (reset! a-ref (maprange [0 127] [dstlo dsthi] vel))
+                            (ctl active-synth (keyword tgrain-param) (deref a-ref))
+                            (println (str double-colon-name ": " (round2 val 2) " => " (round2 (deref a-ref) 2)))))))
+              double-colon-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(cc-param-on-eventer var1-noline trate-ref trate 1 dst-lo dst-hi ::more-general-trate-scaled)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::more-general-trate-scaled)
+#+END_SRC
+
+
+*** model definitions for refactoring as more abstract
+   :PROPERTIES:
+   :ID:       DF0D2884-AC37-42E4-8FF1-9DA603FABEF8
+   :END:
+#+BEGIN_SRC clojure :results silent
+  (defn cc-param-on-eventer1 [active-synth knob-num double-colon-name]
+    (on-event [:midi :control-change]
+              (fn [{note :note vel :velocity}]
+                  (cond (= note knob-num) 
+                        (do (reset! @trate-ref (maprange [0 127] [0.01 1 ] vel))
+                            (ctl active-synth :tgrain @trate-ref)
+                            (println (str double-colon-name ": " (round2 (deref trate-ref) 2) " => " (round2 (deref trate-ref) 2))))))
+              double-colon-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(cc-param-on-eventer1 var1-noline 1 ::simpler-hardcoded-cc)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::simpler-hardcoded-cc)
+#+END_SRC
+
+
+
+** Apollo-overtone restart
+
+*** stop all sound
+Do not rely on apollo-overtone.org!
+
+[[id:DFFB3F5A-370C-4D2A-BA61-685E4B73CCAC][Apollo-overtone restart essentials]]
+
+#+BEGIN_SRC clojure
+(stop)
+#+END_SRC
+
+#+RESULTS:
+: nil
+
+
+** unified, systematized goldberg and yancey interface (as model)
+
+*** [#C] define general-tgrains-synth (buffer trate dur-numerator amp centerpos)
+   :PROPERTIES:
+   :ID:       450B0F1E-9F1E-4B29-8D39-04C012FCF44D
+   :END:
+MONO! (use =pan2=)
+
+#+BEGIN_SRC clojure :results silent
+  (defsynth general-tgrains-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+    (out 0 (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:ar trate)
+          centerpos centerpos]
+      (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 2))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(general-tgrains-synth 0)
+#+END_SRC
+
+
+*** define two vars for playing two buffers with general-tgrains-synth
+#+BEGIN_SRC clojure :results silent
+(def gold (general-tgrains-synth 0))
+;; (def yanc (general-tgrains-synth 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(kill gold)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(ctl yanc :centerpos 40)
+#+END_SRC
+
+
+*** define knob and pad changes with more sophisticated passing
+:PROPERTIES:
+:ID:       BCB30277-2E56-44FB-A36F-F985A0473C9B
+:END:
+
+#+BEGIN_SRC clojure :results silent
+  (defn old-reset-knob [synth synth-param knob-number place midi-channel & {:keys [scale]
+                                                                        :or {scale 1}}]
+      (fn [{knob :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= knob knob-number)
+                (do (reset! place (* val scale))
+                    (ctl synth (keyword synth-param) (deref place))
+                    (println (str synth-param knob-number " : ") (deref place)))))))
+
+  (defn old-swap-pad [synth synth-param pad-number place swap-fn midi-channel]
+      (fn [{pad :note val :velocity chan :channel}]
+        (if (= chan midi-channel)
+          (cond (= pad pad-number)
+                (do (swap! place swap-fn)
+                    (ctl synth (keyword synth-param) (deref place))
+                    (println (str synth-param pad-number " : ") (deref place)))))))
+#+END_SRC
+
+
+*** Set four knobs for amp and centerpos across goldberg and yancey
+:PROPERTIES:
+:ID:       B859EFB9-72F9-405E-9E1F-A0BF75022781
+:END:
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (old-reset-knob gold :amp 2 cc2-1 1 :scale 0.01)
+            ::old-amp-knob2-gold)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob gold :centerpos 1 cc1-1 1 :scale 0.5)
+            ::old-centerpos-knob1-gold)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc :amp 6 cc5-1 1 :scale 0.01)
+            ::old-amp-knob2-yanc)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc :centerpos 5 cc6-1 1 :scale 0.5)
+            ::old-centerpos-knob1-yanc)
+#+END_SRC
+
+
+*** set eight pads for "inc/dec" of centerpos and dur-numerator
+
+#+BEGIN_SRC clojure :results
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc :centerpos 38 pad3-1 inc 1)
+            ::yancey-centerpos-pad3-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc  :centerpos 39 pad3-1 dec 1)
+            ::yancey-centerpos-pad4-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc  :dur-numerator 36 pad1-1 inc 1)
+            ::yancey-durnumerator-pad1-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc  :dur-numerator 37 pad1-1 dec 1)
+            ::yancey-durnumerator-pad2-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold :centerpos 42 pad7-1 inc 1)
+            ::gold-centerpos-pad7-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold :centerpos 43 pad7-1 dec 1)
+            ::gold-centerpos-pad8-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold  :dur-numerator 40 pad5-1 inc 1)
+            ::gold-durnumerator-pad5-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold  :dur-numerator 41 pad5-1 dec 1)
+            ::gold-durnumerator-pad6-dec)
+#+END_SRC
+
+
+
+
+** other homemade granular synths (line synths)
+
+*** [#B] use lines and scaling and more MIDI buttons
+   :PROPERTIES:
+   :ID:       704D472E-0686-45A9-9DE9-2163DB7E3E26
+   :END:
+#+BEGIN_SRC clojure :results silent
+(def gold (general-tgrains-synth :buffer 0 :centerpos (line:kr 0.0 100 30)))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+  (defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 mult 2]
+    (out 0 (pan2 
+            (let [track-len (buf-dur:kr buffer)
+                  trate trate
+                  dur (/ dur-numerator trate)
+                  clk (impulse:ar trate)
+                  centerpos (line:kr centerpos track-len (* mult track-len))  ]
+              (t-grains:ar 1
+                           clk
+                           buffer
+                           1
+                           centerpos
+                           dur
+                           0
+                           amp
+                           2)))))
+#+END_SRC
+
+
+Plays almost exactly like regular track depending on the "mult"
+#+BEGIN_SRC clojure
+(def gold-line (tgrains-line-synth :mult 5))
+#+END_SRC
+
+#+RESULTS:
+: #'user/gold-line
+
+#+BEGIN_SRC clojure
+(def yanc-line (tgrains-line-synth :buffer 1 :mult 4))
+#+END_SRC
+
+#+RESULTS:
+: #'user/yanc-line
+
+
+*** [#B] more complicated granular synth playack (use 't-rand')
+   :PROPERTIES:
+   :ID:       EB3783C6-E9EC-4838-BB28-7641CDBE1086
+   :END:
+#+BEGIN_SRC clojure
+  (defsynth general-trand-synth
+    "stochastic granular synthesis abstraction (in stereo!)"
+    [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:kr trate)
+          centerpos (+ centerpos (t-rand:kr 0 0.1 clk))]
+      (out 0 (pan2 
+              (t-grains:ar 1      ;; num of channels in the output?
+                           clk    ;; aka 'trigger-rate'
+                           buffer ;; number of buffer passed in
+                           1      ;; playback "speed" of grain
+                           centerpos ;;
+                           dur    ;; length of grain
+                           0      ;; pan
+                           amp    ;; amplitude
+                           2      ;; interpolation type
+                           )))))
+#+END_SRC
+
+#+RESULTS:
+: #<synth: general-trand-synth>
+
+#+BEGIN_SRC clojure
+(def gold-rand (general-trand-synth 0))
+(def yanc-rand (general-trand-synth 1))
+#+END_SRC
+
+#+RESULTS:
+: #'user/gold-rand#'user/yanc-rand
+
+general-trand-synth2 defined below
+#+BEGIN_SRC clojure
+(def gold-rand (general-trand-synth2 0))
+(def yanc-rand (general-trand-synth2 1))
+#+END_SRC
+
+#+RESULTS:
+: #'user/gold-rand#'user/yanc-rand
+
+
+*** control randomized granular synths with four knobs and eight pads
+#+BEGIN_SRC clojure
+  (on-event [:midi :control-change]
+            (old-reset-knob gold-rand :amp 2 cc2-1 1 :scale 0.01)
+            ::old-amp-knob2-gold-rand)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob gold-rand :centerpos 1 cc1-1 1 :scale 0.5)
+            ::old-centerpos-knob1-gold-rand)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc-rand :amp 6 cc5-1 1 :scale 0.01)
+            ::old-amp-knob2-yanc-rand)
+
+  (on-event [:midi :control-change]
+            (old-reset-knob yanc-rand :centerpos 5 cc6-1 1 :scale 0.5)
+            ::old-centerpos-knob1-yanc-rand)
+#+END_SRC
+
+#+RESULTS:
+: :added-async-handler:added-async-handler:added-async-handler:added-async-handler
+
+#+BEGIN_SRC clojure
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc-rand :centerpos 38 pad3-1 inc 1)
+            ::yanc-randey-centerpos-pad3-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc-rand  :centerpos 39 pad3-1 dec 1)
+            ::yanc-randey-centerpos-pad4-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc-rand  :dur-numerator 36 pad1-1 inc 1)
+            ::yanc-randey-durnumerator-pad1-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad yanc-rand  :dur-numerator 37 pad1-1 dec 1)
+            ::yanc-randey-durnumerator-pad2-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold-rand :centerpos 42 pad7-1 inc 1)
+            ::gold-rand-centerpos-pad7-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold-rand :centerpos 43 pad7-1 dec 1)
+            ::gold-rand-centerpos-pad8-dec)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold-rand  :dur-numerator 40 pad5-1 inc 1)
+            ::gold-rand-durnumerator-pad5-inc)
+
+  (on-event [:midi :note-on]
+            (old-swap-pad gold-rand  :dur-numerator 41 pad5-1 dec 1)
+            ::gold-rand-durnumerator-pad6-dec)
+#+END_SRC
+
+#+RESULTS:
+: :added-async-handler:added-async-handler:added-async-handler:added-async-handler:added-async-handler:added-async-handler:added-async-handler:added-async-handler
+
+#+BEGIN_SRC clojure
+(remove-event-handler ::yancey-amp-knob2)
+(remove-event-handler ::yancey-centerpos-knob1)
+(remove-event-handler ::yancey-centerpos-pad3-inc)
+(remove-event-handler ::yancey-centerpos-pad4-dec)
+(remove-event-handler ::yancey-durnumerator-pad1)
+(remove-event-handler ::yancey-durnumerator-pad2)
+(remove-event-handler ::yancey-trate-pad7-inc)
+(remove-event-handler ::yancey-trate-pad8-dec)
+#+END_SRC
+
+
+*** [#B] granular synth uses t-rands + impulse throughout
+   :PROPERTIES:
+   :ID:       7D9FF3B8-40E3-4D15-8727-F5893524EF03
+   :END:
+#+BEGIN_SRC clojure
+  (defsynth general-trand-synth2
+    "stochastic granular synthesis abstraction (in stereo!)"
+    [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator (+ trate (t-rand:kr 0 0.1 (impulse:kr trate))))
+          clk (impulse:kr (+ trate (t-rand:kr 0 0.1 (impulse:kr trate))))
+          centerpos (+ centerpos (t-rand:kr 0 0.1 clk))]
+      (out 0 (pan2 
+              (t-grains:ar 1      ;; num of channels in the output?
+                           clk    ;; aka 'trigger-rate'
+                           buffer ;; number of buffer passed in
+                           1      ;; playback "speed" of grain
+                           centerpos ;;
+                           dur    ;; length of grain
+                           0      ;; pan
+                           amp    ;; amplitude
+                           2      ;; interpolation type
+                           )))))
+#+END_SRC
+
+#+RESULTS:
+: #<synth: general-trand-synth2>
+
+
+** misc. project utilities
+
+*** remove some event handlers for yancey and goldberg 
+#+BEGIN_SRC clojure
+(remove-event-handler ::old-amp-knob2-yanc)
+(remove-event-handler ::old-centerpos-knob1-gold)
+(remove-event-handler ::old-centerpos-knob1-yanc)
+(remove-event-handler ::old-amp-knob2-yanc)
+
+(remove-event-handler ::yancey-centerpos-pad3-inc)
+(remove-event-handler ::yancey-centerpos-pad4-dec)
+(remove-event-handler ::yancey-durnumerator-pad1-inc)
+(remove-event-handler ::yancey-durnumerator-pad2-dec) ;; switch to dec
+
+(remove-event-handler ::gold-centerpos-pad7-inc)
+(remove-event-handler ::gold-centerpos-pad8-dec)
+(remove-event-handler ::gold-durnumerator-pad5-inc)
+(remove-event-handler ::gold-durnumerator-pad6-dec)
+
+#+END_SRC
+
+#+RESULTS:
+: :handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed:handler-removed
+
+
+** translated from sc granular examples
+
+*** uses dust
+   :PROPERTIES:
+   :ID:       674DA4F5-F185-4D5C-A677-5F802B6705DB
+   :END:
+#+BEGIN_SRC clojure :results silent
+  (defsynth dust-gran-synth
+    "granular synth using dust for 'clk' and based on sc docs"
+    [buffer 0 trate 1 dur-numerator 20 amp 0.5 centerpos 1]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (dust:kr trate)
+          centerpos (+ centerpos (t-rand:kr 0, 0.1 clk))]
+      (out 0 (pan2 (t-grains:ar 1 clk buffer 1 centerpos dur 0 amp 4)))))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def gold-dust (dust-gran-synth 0))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+;; can't send a ugen in place of a float as a control message
+(ctl gold-dust :centerpos (line 0 (buf-dur:kr 0) (buf-dur:kr 0) ))
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def gold-dust2 (dust-gran-synth 0 :centerpos (line 0 (buf-dur:kr 0) (buf-dur:kr 0) )))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def some-dust (dust-gran-synth 2))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; fails!
+;; can't send a ugen in place of a float as a control message
+;; see solution:
+;; [[id:5B64A0AA-C2B5-468A-A39F-4DC5D3EF55D0][keyboard keys and transport event handlers (with scaling)]]
+(ctl some-dust :centerpos (line 0 (buf-dur:kr 0) (buf-dur:kr 0) ))
+
+#+END_SRC
+
+
+** develop abstraction for controlling parameters of any granular synth
+  :PROPERTIES:
+  :ID:       C9CED1FB-43C5-4DBD-836E-78980A17AC02
+  :VISIBILITY: content
+  :END:
+
+*** required functions
+[[id:BCB30277-2E56-44FB-A36F-F985A0473C9B][define knob and pad changes with more sophisticated passing]]
+
+
+*** required event-handler templates
+[[id:B859EFB9-72F9-405E-9E1F-A0BF75022781][Set four knobs for amp and centerpos across goldberg and yancey]]
+
+
+*** examples of required atoms
+[[id:B3DB9C3B-4F2B-40D4-B16C-DF3047C968D9][define 32 atoms for two sets of channels and CC messages]]
+
+
+*** general overview of steps
+
+[[id:EEEBABF7-6A2A-4B1A-9D57-D1C8E0D42E72][make abstraction for playing with CC and granular synth]]
+
+
+*** finally, see dedicated file
+[[file:final-tgrain-controller-abstraction.org][file:~/Github-repos/apollo-supercollider/final-tgrain-controller-abstraction.org]]
+
+
+*** create macro for event-handlers
+
+**** must record values from somewhere???
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{cc-channel :note vel :velocity}]
+              (case vel
+                127
+                (case cc-channel 
+                  18 (record-val current-val)
+                  17 (println (deref liked-values))
+                  :else nil)
+                0 nil))
+            ::record-value-handler)
+#+END_SRC
+
+
+**** actual event handler for template
+#+BEGIN_SRC clojure :results silent
+(on-event [:midi :note-on]
+              (fn [{note :note}]
+                (let [val (deref current-val)]
+                  (do (reset! current-val (maprange [60 91] [0.0 (deref dst-hi)] note))
+                      (ctl var1 :centerpos val)
+                      (println (str "var1 centerpos"  ":" (round2 val 2))))))
+              ::some-var1-synth-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::some-var1-synth-name)
+#+END_SRC
+
+
+**** first draft macro
+
+Do you really need a macro though? Does this even work? It almost surely is not necessary, but you need to dig deep to understand the problem of when to use macro and when to use just a regular function!
+
+#+BEGIN_SRC clojure :results silent
+  (defmacro note-events-from-current-val
+    [synth double-colon-name hi-scaling-dest]
+  `(on-event [:midi :note-on]
+              (fn [{note :note}]
+                (let [val# (deref current-val)]
+                  (do (reset! current-val (maprange [60 91] [0.0 (deref ~hi-scaling-dest)] note))
+                      (ctl ~synth :centerpos val#)
+                      (println (str ~double-colon-name ":" (round2 val 2))))))
+              ~double-colon-name))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(note-events-from-current-val var1 ::var1-centerpos dst-hi)
+#+END_SRC
+
+**** A Master File for coordinating work on Incarnation Audio
+  :PROPERTIES:
+  :ID:       BEA8AB7C-31AC-47F6-AA7A-FF7907120B64
+  :END:
+***** rationale
+Note that this is NOT an actual Clojure project, though it exists to coordinate a lot of work using the Overtone library.
+Since I will be or have been using:
+
+- audacity
+- pure data
+- supercollider
+- overtone
+
+I will be generating a range of files and data, especially considering I am using two computers (at least!) to develop with.
+
+Thus, aside from requiring smart, skillful and efficient git/github usage, I also just need to be very clear about what is where.
+***** workflow
+One pattern has been:
+
+- record some (large) audio files with Audacity
+- open pd to test out some simple concepts
+- look at supercollider documentation and tutorials to lay a foundation for translating
+- generate my own documentation based on extracts from existing sc tutorial files (primarily in org-mode)
+***** where are things?
+
+- for large sound files from Audacity
+
+/Users/a/Music/Audio_Projects 
+
+- shared audio resources should go in
+
+[[file:~/Dropbox/MUSIC/][file:~/Dropbox/MUSIC/]]
+
+- general Supercollider tutorial work and documentation:
+
+[[file:~/Dropbox/AB-local/Documents-new-home/supercollider-files/][file:~/Dropbox/AB-local/Documents-new-home/supercollider-files/]]
+
+- messy files for figuring out things specifically for this project (not to be preserved necessarily) aka SANDBOX--this directory:
+
+[[file:][file:~/Github-repos/apollo-supercollider/]]
+
+* straight audio playback (with buffers)
+*** using randomness and the mouse (but no refs)
+**** mouse-rand-grain1
+:PROPERTIES:
+:DATE_CREATED: [2017-02-11 Sat 13:23]
+:ID:       6846EBE5-14EA-4655-8855-1F674FCBAB1D
+:END:
+Link to a gran sysnth player with randomness
+
+#+BEGIN_SRC clojure
+  (defsynth mouse-rand-grain
+    [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+    (let [trate (mouse-y:kr 0.5 20)
+          dur (/ dur-numerator trate)
+          clk (impulse:kr trate)
+          centerpos (+ (mouse-x:kr 0 (* 0.5 (buf-dur:kr buffer))) (t-rand:kr 0 0.01 clk))]
+      (out 0 (pan2 
+              (t-grains:ar 1 clk buffer 1 ;; mouse x/y and t-rand
+                           centerpos dur 
+                           0 amp 2 )))))
+
+#+END_SRC
+
+#+RESULTS:
+: #<synth: mouse-rand-grain>
+
+#+BEGIN_SRC clojure 
+(mouse-rand-grain 7)
+#+END_SRC
+
+#+RESULTS:
+: #<synth-node[loading]: user/mouse-rand-grain 50>
+
+**** [#A] interesting use of interaction and randomness (muose-rand-grain2 uses =line=)
+:PROPERTIES:
+:ID:       95FDE12A-8C18-42A9-8500-5619E3ACF461
+:END:
+Uses a mouse-x and a slowly advancing =line= to work against each
+other and make the centerpos stay more or less one place.
+
+What's the name for this kind of technique of scaling etc.? It reminds
+me of Ivan of Teixera--error correction doesn't quite do it.
+
+The idea is "smoothing," reducing out jumps of values that are the
+result of unnecessarily noisy readings?
+
+#+NAME: mouse-rand-grain2-def
+#+BEGIN_SRC clojure :results silent
+(defsynth mouse-rand-grain2
+  [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+  (let [trate (mouse-y:kr 0.5 20)
+        track-len (buf-dur:kr buffer)
+        dur (/ dur-numerator trate)
+        clk (impulse:kr trate)
+        line-centerpos (+ (mouse-x:kr 0 (buf-dur:kr buffer))
+                          (line:kr 0 (* 0.5 track-len) (* 2 track-len))
+                          (t-rand:kr 0 0.01 clk))]
+    (out 0 (pan2 
+            (t-grains:ar 1 clk buffer ;; mouse x/y and line and rand
+                         1 line-centerpos dur 0 amp 2 )))))
+
+#+END_SRC         
+
+#+RESULTS:
+: #<synth: mouse-rand-grain2>
+
+         
+#+BEGIN_SRC clojure 
+(def pasdaction-gran (mouse-rand-grain2 7))
+#+END_SRC
+
+#+RESULTS:
+: #'user/pasdaction-gran
+**** [#A] granular with g-verb
+    :PROPERTIES:
+    :ID:       8E237C21-866C-4BD8-8681-4AB843BDFA1C
+    :END:
+
+#+NAME: mouse-rand-grain3-def
+#+BEGIN_SRC clojure :results silent
+    (defsynth mouse-rand-grain3
+  "Summary of arglist: buffer; trate; amp; centerpos; AND then reverb args...
+  roomsize; revtime; damping; inputbw; drylevel; earlyreflevel; taillevel; maxroomsize"
+      [buffer 0 trate 1
+       dur-numerator 12 amp 0.8
+       centerpos 0 roomsize 10
+       revtime 5 damping 0.5
+       inputbw 0.2 drylevel 0.1
+       earlyreflevel 0.7 taillevel 0.5
+       maxroomsize 300]
+      (let [trate (mouse-y:kr 0.5 20)
+            track-len (buf-dur:kr buffer)
+            dur (/ dur-numerator trate)
+            clk (impulse:kr trate)
+            line-centerpos (+ (mouse-x:kr 0 (buf-dur:kr buffer))
+                              (line:kr 0 (* 0.5 track-len) (* 2 track-len))
+                              (t-rand:kr 0 0.01 clk))]
+        (out 0 (pan2 (g-verb  
+                (t-grains:ar 1 clk buffer 1 ;; mouse x, line, rand, reverb
+                             line-centerpos dur 
+                             0 amp 2 ) )))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results output
+(def pasdaction-grand (mouse-rand-grain3 :buffer 7 :amp 0.1))
+#+END_SRC
+
+#+RESULTS:
+: Sending:  /s_new [user/mouse-rand-grain3 42 1 7 roomsize 10.0 earlyreflevel 0.7 taillevel 0.5 dur-numerator 12.0 buffer 7.0 maxroomsize 300.0 trate 1.0 amp 0.1 revtime 5.0 centerpos 0.0 inputbw 0.2 damping 0.5 drylevel 0.1]
+
+#+BEGIN_SRC clojure :results silent
+(def apotheose-grand (mouse-rand-grain3 :buffer 3 :amp 0.1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def coda-grand (mouse-rand-grain3 :buffer 4 :amp 0.1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl mouse-rand-grain3 :amp 0.1)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl mouse-rand-grain3 : 0.1)
+#+END_SRC
+* follow and modify official tutorials
+** use busses (namespaces matter??)
+:PROPERTIES:
+:DATE_CREATED: [2017-02-14 Tue 21:12]
+:END:
+
+*** getonthebus example
+Meant to acheive the following in a more "flexible" i.e. complicated
+way?
+
+**** get on the bus audio example as a one-liner?
+#+BEGIN_SRC clojure :results silent
+  (demo (pan2 (* (lf-tri:kr 5) (lf-tri 220))))
+#+END_SRC
+
+**** namespaces are tricky when combining source files and cider-scratch with babel
+#+BEGIN_SRC clojure :results silent
+
+  ;; works when in this following namespace but not user?
+  (in-ns 'overtone.examples.buses.getonthebus)
+  (in-ns 'user)
+
+*ns*
+  ;; def two audio busses
+
+  ;; (in-ns 'testing [:use overtone.live)
+#+END_SRC
+
+**** define all necessary busses, groups, and synths
+#+BEGIN_SRC clojure :results silent
+  (defonce tri-bus (audio-bus))
+
+  (comment  
+    tri-bus
+    #<audio-bus: No Name, mono, id 79>
+
+    #<audio-bus: No Name, mono, id 61>
+    )
+
+  (defonce sin-bus (audio-bus))
+
+  (comment
+    sin-bus
+    #<audio-bus: No Name, mono, id 80>
+
+    #<audio-bus: No Name, mono, id 62>
+    )
+
+  ;; def two synths with control-rate out
+  ;; take an out-bus argument and a frequency argument
+  (defsynth tri-synth [out-bus 0 freq 5]
+    (out:kr out-bus (lf-tri:kr freq)))
+
+  (defsynth sin-synth [out-bus 0 freq 5]
+    (out:kr out-bus (sin-osc:kr freq)))
+
+  ;; def groups
+
+  (defonce main-g (group "get-on-the-bus main"))
+  (defonce early-g (group "early birds" :head main-g))
+  (defonce later-g (group "latecomers" :after early-g))
+
+
+  ;; create named versions of the synths defined earlier
+  ;; give group as out-bus argument and AUDIO BUSSES for FREQ!
+  (def tri-synth-inst (tri-synth [:tail early-g] tri-bus))
+  (def sin-synth-inst (sin-synth [:tail early-g] sin-bus))
+
+  ;; defining CONTROL-RATE synths puts their output on the busses
+  ;; the busses must be connected to an output bus somewhere
+
+  ;; see pp-node-tree for results of putting things on the server
+
+  ;; def an (AUDIO RATE!) synth to receive a signal from a bus
+  ;; and send that signal to the out bus
+  ;; (using pan2 this gets sent two left/right by default)
+
+  (defsynth modulated-vol-tri [vol-bus 0 freq 220]
+    (out 0 (pan2 (* (in:kr vol-bus) (lf-tri freq)))))
+
+  ;; more complicated synth
+  ;; passes a special local freq variable to the triangle wave osc
+  ;; special frequency comes off the input bus and then is treated
+  (defsynth modulated-freq-tri [freq-bus 0 mid-freq 220 freq-amp 55]
+    (let [freq (+ mid-freq (* (in:kr freq-bus) freq-amp))]
+      (out 0 (pan2 (lf-tri freq)))))
+
+#+END_SRC
+
+**** create refs of synths
+
+Putting them on the server? Putting them in busses? Directing the
+output from the control busses to the audio output busses?
+
+#+BEGIN_SRC clojure :results silent
+  ;; create named versions of complicated synth
+  ;; put them within another subgroup within the main group
+  ;; but grab the frequency put on the sin bus defined at the beginning
+
+  (def mvt (modulated-vol-tri [:tail later-g] sin-bus))
+  (def mft (modulated-freq-tri [:tail later-g] sin-bus))
+
+
+  ;; control various parameters of running synths
+  (ctl mft :freq-bus tri-bus)
+
+  (ctl tri-synth-inst :freq 0.5)
+
+  (ctl mvt :vol-bus tri-bus)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (kill mft)
+  (kill mvt)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  ;; after killing the named synths, there is still data on the busses
+  ;; can be killed explicitly, or with stop
+  ;; or can be re-used in a new instance!
+
+  (def mvt-2 (modulated-vol-tri [:tail later-g] sin-bus 110))
+
+
+  ;; some last controlling
+  (ctl tri-synth-inst :freq 5)
+  (ctl sin-synth-inst :freq 5)
+
+  (def mft-2 (modulated-freq-tri [:tail later-g] sin-bus 220 55))
+  (def mft-3 (modulated-freq-tri [:tail later-g] tri-bus 220 55)))
+
+  (ctl sin-synth-inst :freq 4)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(kill mvt-2)
+(kill mft-2 mft-3)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+
+  ;; various synths in various groups within some "main" group
+
+
+
+
+
+
+  (defsynth voices []
+    (let [n 8
+          src (* 0.9 (dust (repeat n 2)))
+          del (comb-l src 0.1 (repeatedly n #(+ (rand 0.004) 0.003)) 4)]
+      (out 0 (splay del :spread 0.8))))
+
+  (voices)
+
+  (defsynth voices2 [amp 1]
+    (let [n 8
+          src (* 2 (dust (repeat n 2)))
+          del (comb-l src 0.1 (repeatedly n #(+ (rand 0.004) 0.003)) 4)]
+      (out 0 (splay del :spread 0.8 :level amp))))
+
+  (def my-voices (voices2))
+
+  (ctl voices2 :amp 2)
+
+  (stop)
+
+  (pp-node-tree)
+
+  ;; after defining two groups
+  {:type :group,
+   :id 280,
+   :name "Overtone User",
+   :children
+   ({:type :group,
+     :id 281,
+     :name "Overtone Safe Pre Default",
+     :children nil}
+    {:type :group,
+     :id 282,
+     :name "Overtone Default",
+     :children
+     ({:type :group,
+       :id 334,
+       :name "get-on-the-bus main",
+       :children
+       ({:type :group, :id 335, :name "early birds", :children nil}
+        {:type :group, :id 336, :name "latecomers", :children nil})})}
+    {:type :group,
+     :id 283,
+     :name "Overtone Safe Post Default",
+     :children nil})}
+
+  ;; after putting tri-synth on the early-g bus??
+  (
+   {:type :group,
+    :id 282,
+    :name "Overtone Default",
+    :children
+    ({:type :group,
+      :id 334,
+      :name "get-on-the-bus main",
+      :children
+      ({:type :group,
+        :id 335,
+        :name "early birds",
+        :children ({:type :synth, :name "user/tri-synth", :id 337})}
+       {:type :group, :id 336, :name "latecomers", :children nil})})}
+   )
+#+END_SRC
+
+*** convert the on the bus synths to do granular synthesis with reverb?
+
+use busses as reverb effects processing?
+Consult the all-examples external and notation?? for fx- instances
+
+Look at overtone examples
+(nsovertone.examples.instruments.external]
+
+* less
+** print out mouse x and y values 
+:PROPERTIES:
+:DATE_CREATED: [2017-02-11 Sat 09:33]
+:END:
+
+Won't print out to REPL from a babel-block, hmm?
+#+BEGIN_SRC clojure 
+(let [t 2] (do (run 30 (poll:kr (impulse:kr t) (mouse-y) "mouse-y:"))
+               (run 30 (poll:kr (impulse:kr t) (mouse-x) "mouse-x:" ))
+               (run 30 (poll:kr (impulse:kr t) (+ 0.0) (str " " \newline \newline)))))
+#+END_SRC
+
+#+RESULTS:
+: #<synth-node[loading]: user/audition-synth 108>
+
+** add in randomness to tgrain playback
+** [#A] using reverb (many arguments granular synthesize)
+
+*** g-verb on sin-osc
+#+BEGIN_SRC clojure :results silent
+;; (demo (g-verb (* 0.1 (sin-osc (+ 100 (* 1000 (sin-osc:ar 1)))))))
+
+(demo 10 (g-verb :in (* 0.1 (sin-osc (+ 100 (* 1000 (sin-osc:ar 1)))))
+              :roomsize 20 :revtime 5 :damping 0.5 :inputbw 0.2 :drylevel 0.1
+              :earlyreflevel 0.7 :taillevel 0.5 :maxroomsize 300))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (demo 10 (free-verb (sin-osc (t-rand:kr 0 1000 (impulse:kr 3)) 0 100 100)))
+
+  (demo 10 (free-verb (sin-osc (t-rand:kr 0 1000 (impulse:kr (+ 5 (sin-osc:kr 1 0 1 1)))))))
+#+END_SRC
+
+** understanding mechanices of server, nodes, groups, busses
+
+*** some pp-node-trees
+
+**** simple: after working and killing and rebooting server
+#+BEGIN_SRC clojure 
+{:type :group,
+ :id 127,
+ :name "Overtone Root",
+ :children
+ ({:type :group,
+   :id 154,
+   :name "Studio",
+   :children
+   ({:type :group,
+     :id 155,
+     :name "Recreated Inst Group",
+     :children nil}
+    {:type :group,
+     :id 156,
+     :name "Recreated Inst Group",
+     :children nil}
+    {:type :group,
+     :id 157,
+     :name "Recreated Inst Group",
+     :children nil})}
+  {:type :group,
+   :id 128,
+   :name "Overtone User",
+   :children
+   ({:type :group,
+     :id 129,
+     :name "Overtone Safe Pre Default",
+     :children nil}
+    {:type :group, :id 130, :name "Overtone Default", :children nil}
+    {:type :group,
+     :id 131,
+     :name "Overtone Safe Post Default",
+     :children nil})})}
+#+END_SRC
+
+** play wurly chords
+   :PROPERTIES:
+   :DATE_CREATED: [2017-02-13 Mon 21:12]
+   :END:
+#+BEGIN_SRC clojure :results silent
+(def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
+(def path-to-mono (str path-to-sounds "sounds/all-mono/"))
+
+
+(def variation1 (load-sample (str path-to-mono "WURLI-maj7-mono.wav")))
+(def variation2 (load-sample (str path-to-mono "WURLI-open5-mono.wav")))
+(def variation3 (load-sample (str path-to-mono "WURLI-dominant7-mono.wav")))
+(def variation4 (load-sample (str path-to-mono "WURLI-dominant-two-mono.wav")))
+
+(grainy-ctl-mousex :b 0 :trate 0.25)
+
+(ctl grainy-ctl-mousex :trate 1)
+
+(stop)
+
+(def wurly (mouse-grain-y))
+
+(def wurly-rand (mouse-rand-grain2))
+
+(on-event [:midi :control-change]
+          (fn [{cc-channel :note vel :velocity chan :channel}]
+            (println (list cc-channel vel chan)))
+          ::list-all)
+
+(remove-event-handler ::list-all)
+
+(on-event [:midi :control-change]
+          (fn [{cc-channel :note vel :velocity chan :channel}]
+            (ctl wurly-rand :amp (scale-range vel 0 127 0 1)))
+          ::ctl-wurlyrand-amp)
+
+(remove-event-handler ::ctl-wurlyrand-amp)
+
+
+;; #+CALL: mouse-rand-grain2-def
+;; (defsynth mouse-rand-grain2
+;;   [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+;;   (let [trate (mouse-y:kr 0.5 20)
+;;         track-len (buf-dur:kr buffer)
+;;         dur (/ dur-numerator trate)
+;;         clk (impulse:kr trate)
+;;         line-centerpos (+ (mouse-x:kr 0 (buf-dur:kr buffer))
+;;                           (line:kr 0 (* 0.5 track-len) (* 2 track-len)) 
+;;                           (t-rand:kr 0 0.01 clk))]
+;;     (out 0 (pan2 
+;;             (t-grains:ar 1 clk buffer ;; mouse x/y, line, rand
+;;                          1 line-centerpos dur 
+;;                          0 amp 2 )))))
+
+(on-event [:midi :control-change]
+          (fn [{cc-channel :note vel :velocity}]
+            (case cc-channel
+              1 (ctl wurly-rand-I :amp (scale-range vel 1 127 0 1))
+              2 (ctl wurly-rand-VI :amp (scale-range vel 1 127 0 1))
+              3 (ctl wurly-rand-V  :amp (scale-range vel 1 127 0 1))
+              4 (ctl wurly-rand-II  :amp (scale-range vel 1 127 0 1))))
+          ::ctl-wurly-chords)
+
+(def wurly-rand-I (mouse-rand-grain2 0))
+(def wurly-rand-VI (mouse-rand-grain2 1))
+(def wurly-rand-V (mouse-rand-grain2 2))
+(def wurly-rand-II (mouse-rand-grain2 3))
+#+END_SRC
+** [#A] some ugen tests
+   :PROPERTIES:
+   :DATE_CREATED: [2017-02-28 Tue 16:00]
+   :END:
+
+#+BEGIN_SRC clojure :results silent
+(demo (pan2 (sin-osc)))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 1 (pan2 (* 10 (rlpf (saw) (line 20 6e3 0.5) 1))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 0.75 (pan2 (* 30 (comb-n (bpf (pink-noise) (line 20 6e3 0.5) 1) 0.4 0.3 0.5))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 5 (pan2 (* 400 (bpf (pink-noise) 1000 0.01))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 5 (pan2 (* 10.1 (klang [[1000 440 260]]))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 10 (pan2 (* 10 (+ (* 40 (bpf (pink-noise) 1000 0.01))
+                         (klang [(choose-n 4 (map #(+ % 200) (range 1 100)))])))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results value
+(rand-nth (map #(* % 10) (range 1 100)))
+#+END_SRC
+
+#+RESULTS:
+: 850
+
+#+BEGIN_SRC clojure :results silent
+(demo 10 (pan2 (* 2 (+ (* 40 (bpf (pink-noise) (scale-range (rand) 0 1 500 1000) 0.01))
+                         (klang [(choose-n 10 (map #(+ % 400) (range
+                                                               1 ;;10
+                                                               100 ;;1000
+                                                               )))])))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 10 (pan2 (* 40 (comb-n (bpf (pink-noise) (line 20 6e3 10) 1) 0.9 0.3 0.5))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 5 (pan2 (* 20  (comb-n (bpf (saw (+ 100 (lf-noise0:kr))) (line 20 6e3 10) 1) 0.9 0.3 0.5))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(demo 5 (pan2 (* 2.5  (saw (+ 400 (* 100 (lf-pulse:kr 10)))))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(stop)
+#+END_SRC
