@@ -1,0 +1,707 @@
+* steps for granular work from post-tonal-overtone
+
+** get help find documentation
+
+https://github.com/overtone/overtone/wiki
+
+[[file:~/repos/post-tonal-overtone/docs/][file:~/repos/post-tonal-overtone/docs/]]
+
+https://overtone.github.io/docs.html
+** shortest-effective code blocks
+
+*** get sound with a granular synth
+
+Long and Blocking
+#+begin_src clojure
+(use 'overtone.live)
+#+end_src
+
+#+RESULTS:
+
+Uh, what's this?
+
+#+begin_src clojure
+(swap! live-config assoc-in [:sc-args :max-buffers] 1024)
+#+end_src
+
+#+RESULTS:
+| :os | :mac | :user-name | Oi | :server | :internal | :sc-args | (:max-buffers 1024) | :versions-seen | v0.10.6 |
+
+
+
+#+RESULTS:
+: #'user/path-to-sounds
+
+
+
+#+begin_src clojure
+(def variation1 (load-sample (str path-to-sounds "brown30-mono.wav")))
+#+end_src
+
+#+RESULTS:
+: #'user/variation1
+
+#+BEGIN_SRC clojure :results silent
+  (defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
+    (out 0 (pan2 
+            (let [track-len (buf-dur:kr buffer)
+                  trate trate
+                  dur (/ dur-numerator trate)
+                  clk (impulse:ar trate)
+                  centerpos (line:kr centerpos track-len (* duration-mult track-len))  ]
+              (t-grains:ar 1
+                           clk
+                           buffer
+                           1
+                           centerpos
+                           dur
+                           0
+                           amp
+                           2)))))
+#+END_SRC
+
+#+begin_src clojure
+(def line-for-variation1 (tgrains-line-synth :buffer 0))
+#+end_src
+
+#+RESULTS:
+: #'user/line-for-variation1
+
+#+begin_src clojure
+(ctl line-for-variation1  :trate 0.3 :dur-numerator 12)
+#+end_src
+
+#+RESULTS:
+: #<synth-node[live]: user/tgrains-line-synth 40>
+
+
+Your synth must be defined but the buffer does not have to be running the audio of it.
+
+#+BEGIN_SRC clojure :results silent
+(def yanc-line (tgrains-line-synth :trate 0.5 :duration-mult 3 :dur-numerator 8))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; defaults to buffer 0 (slow-goldberg, in this project)
+  ;; #<buffer-info: 184.540590s mono 0>
+
+  (definst slow-grain-reverb [b 0 trigger-rate 1 centerpos 1 grain-dur 0.5] 
+(let [trigger-rate (impulse:ar trigger-rate)]
+    (free-verb
+           (t-grains:ar 1 ;; num-channel
+                       trigger-rate
+                        b ;; bufnum
+                        1 ;; rate
+                        centerpos
+                        grain-dur
+                        0 ;; pan
+                        1 ;; amp
+                        2 ;; interp
+                        )
+           :mix 0.2
+           :damp 0.1
+           :room 0.9)))
+
+
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(slow-grain-reverb :b 0)
+#+END_SRC
+
+*** use a midi-connected-device
+
+#+begin_src clojure
+(midi-connected-devices)
+#+end_src
+
+#+RESULTS:
+: '((:description "IAC Driver Bus 1"  :vendor "Apple Inc."  :sinks 0  :sources 2147483647  :name "Bus 1"  :overtone.studio.midi/full-device-key (:midi-device "Apple Inc." "Bus 1" "IAC Driver Bus 1" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x577118a4 "Bus 1")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x53d4ee67 "com.sun.media.sound.MidiInDevice@53d4ee67")  :version "Unknown version") (:description "IAC Driver Bus 2"  :vendor "Apple Inc."  :sinks 0  :sources 2147483647  :name "Bus 2"  :overtone.studio.midi/full-device-key (:midi-device "Apple Inc." "Bus 2" "IAC Driver Bus 2" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x58e76c49 "Bus 2")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x6610b172 "com.sun.media.sound.MidiInDevice@6610b172")  :version "Unknown version") (:description "miogue MIDI IN"  :vendor "KORG INC."  :sinks 0  :sources 2147483647  :name "MIDI IN"  :overtone.studio.midi/full-device-key (:midi-device "KORG INC." "MIDI IN" "miogue MIDI IN" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x39fb212c "MIDI IN")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x4da847a2 "com.sun.media.sound.MidiInDevice@4da847a2")  :version "Unknown version") (:description "miogue KBD/KNOB"  :vendor "KORG INC."  :sinks 0  :sources 2147483647  :name "KBD/KNOB"  :overtone.studio.midi/full-device-key (:midi-device "KORG INC." "KBD/KNOB" "miogue KBD/KNOB" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x2eceef7a "KBD/KNOB")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x4d3640f0 "com.sun.media.sound.MidiInDevice@4d3640f0")  :version "Unknown version") (:description "from Max 1"  :vendor "Unknown vendor"  :sinks 0  :sources 2147483647  :name "from Max 1"  :overtone.studio.midi/full-device-key (:midi-device "Unknown vendor" "from Max 1" "from Max 1" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x2da4ea3b "from Max 1")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x223e3d7a "com.sun.media.sound.MidiInDevice@223e3d7a")  :version "Unknown version") (:description "from Max 2"  :vendor "Unknown vendor"  :sinks 0  :sources 2147483647  :name "from Max 2"  :overtone.studio.midi/full-device-key (:midi-device "Unknown vendor" "from Max 2" "from Max 2" 0)  :info #object(com.sun.media.sound.MidiInDeviceProvider$MidiInDeviceInfo 0x7b52a378 "from Max 2")  :overtone.studio.midi/dev-num 0  :device #object(com.sun.media.sound.MidiInDevice 0x41c5d22 "com.sun.media.sound.MidiInDevice@41c5d22")  :version "Unknown version"))
+
+
+seel inks
+
+
+
+from STEPS
+[[file:~/repos/apollo-supercollider/steps.org][file:~/repos/apollo-supercollider/steps.org]]
+
+[[file:~/repos/apollo-supercollider/steps.org::*improve abstraction for cc event handling][improve abstraction for cc event handling]]
+
+
+Maybe best... but expects a certain pattern of controllers
+
+
+[[file:~/repos/apollo-supercollider/steps.org::*simple example of using noisy synth with 8 parameters and CC event handler][simple example of using noisy synth with 8 parameters and CC event handler]]
+
+from APOLLO-OVERTONE
+[[file:~/repos/apollo-supercollider/apollo-overtone.org][file:~/repos/apollo-supercollider/apollo-overtone.org]]
+
+[[file:~/repos/apollo-supercollider/apollo-overtone.org::*build large event handler (using "on-event")][build large event handler (using "on-event")]]
+
+[[file:~/repos/apollo-supercollider/apollo-overtone.org::*a start (too large)][a start (too large)]]
+
+from FINAL-TGRAIN-CONTROLLER-ABSTRACTION
+[[file:~/repos/apollo-supercollider/final-tgrain-controller-abstraction.org][file:~/repos/apollo-supercollider/final-tgrain-controller-abstraction.org]]
+
+[[file:~/repos/apollo-supercollider/final-tgrain-controller-abstraction.org::*note-on ON-EVENTER (note-on event handler for ANY active synth!)][note-on ON-EVENTER (note-on event handler for ANY active synth!)]]
+
+*** complex midi and granular synth
+
+[[file:~/repos/apollo-supercollider/steps.org::*def atoms][def atoms]]
+
+#+BEGIN_SRC clojure :results silent
+(def cc0-1-lo (atom 100))
+(def cc0-1-hi (atom 1000))
+(def cc0-2-lo (atom 1))
+(def cc0-2-hi (atom 30))
+(def cc0-3-lo (atom 0.1))
+(def cc0-3-hi (atom 1))
+(def cc0-4-lo (atom 0.1))
+(def cc0-4-hi (atom 1000))
+
+
+#+END_SRC
+
+
+[[file:~/repos/apollo-supercollider/steps.org::*def noise-sine "ring-bank" synth][def noise-sine "ring-bank" synth]]
+
+[[file:~/repos/apollo-supercollider/steps.org::*create instance of ring-bank][create instance of ring-bank]]
+
+#+BEGIN_SRC clojure :results silent
+(defsynth ring-bank [cc0-1 200 cc0-2 20 cc0-3 1] (out 0 (pan2 (* cc0-3 (ring3 (sin-osc cc0-1) (lf-noise0:kr cc0-2))))))
+#+END_SRC
+
+[[file:~/repos/apollo-supercollider/steps.org::*ctl ring-bank instance][ctl ring-bank instance]]
+#+BEGIN_SRC clojure :results silent
+(def rb (ring-bank))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(ctl rb :cc0-1 330)
+#+END_SRC
+
+*** gui interact with synth
+
+#+BEGIN_SRC clojure :results silent
+    (defsynth mouse-rand-grain3
+  "Summary of arglist: buffer; trate; amp; centerpos; AND then reverb args...
+  roomsize; revtime; damping; inputbw; drylevel; earlyreflevel; taillevel; maxroomsize"
+      [buffer 0 trate 1
+       dur-numerator 12 amp 0.8
+       centerpos 0 roomsize 10
+       revtime 5 damping 0.5
+       inputbw 0.2 drylevel 0.1
+       earlyreflevel 0.7 taillevel 0.5
+       maxroomsize 300]
+      (let [trate (mouse-y:kr 0.5 20)
+            track-len (buf-dur:kr buffer)
+            dur (/ dur-numerator trate)
+            clk (impulse:kr trate)
+            line-centerpos (+ (mouse-x:kr 0 (buf-dur:kr buffer))
+                              (line:kr 0 (* 0.5 track-len) (* 2 track-len))
+                              (t-rand:kr 0 0.01 clk))]
+        (out 0 (pan2 (g-verb  
+                (t-grains:ar 1 clk buffer 1 ;; mouse x, line, rand, reverb
+                             line-centerpos dur 
+                             0 amp 2 ) )))))
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results output
+(def pasdaction-grand (mouse-rand-grain3 :buffer 0 :amp 0.1))
+#+END_SRC
+
+*** make some kind of event handlers
+
+#+BEGIN_SRC clojure :results silent
+(definst pley [buf 0 amp 0.01 room16 10 rev17 5 damp18 0.5 input19 0.2 dry20 0.1 early21 0.7 tail22 0.5 max23 300] 
+(* amp (g-verb (play-buf 1 buf 1 1 0 1) room16 rev17 damp18 input19 dry20 early21 tail22 max23 )))
+#+end_src
+
+
+
+#+begin_src clojure
+(def short-a (pley 0))
+#+END_SRC
+
+#+RESULTS:
+: #'user/short-a
+
+Use minilogue controllers
+
+- 16 :: AMP EG attack
+- 17 :: AMP EG decay
+- 18 :: AMP EG sustain
+- 19 :: AMP EG release
+
+Will all work!  
+
+#+BEGIN_SRC clojure :results silent
+(defn cc-minilogue1-reverb [active-synth double-colon-name]
+  (on-event
+   [:midi :control-change]
+   (fn [{cc-channel :note vel :velocity}]
+     (case cc-channel
+       16 (ctl active-synth :room16 (scale-range vel 1 127 0.1 10))
+       17 (ctl active-synth :rev17 (scale-range vel 1 127 0.1 5))
+       18 (ctl active-synth :damp18 (scale-range vel 1 127 0 1))
+       19 (ctl active-synth :input19 (scale-range vel 1 127 0 1))
+       20 (ctl active-synth :dry20 (scale-range vel 1 127 0.1 2))
+       21 (ctl active-synth :early21 (scale-range vel 1 127 0.1 1))
+       22 (ctl active-synth :tail22 (scale-range vel 1 127 0.1 1))
+       23 (ctl active-synth :max23 (scale-range vel 1 127 1 400))
+       43 (ctl active-synth :amp (scale-range vel 1 127 0.001 0.01))
+       ))
+   double-colon-name))
+#+END_SRC
+But hard codes the channel numbers
+
+#+BEGIN_SRC clojure :results silent
+(cc-minilogue1-reverb short-a ::shortay)
+#+END_SRC
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::shortay)
+#+END_SRC
+
+*** good luck from there
+
+#+BEGIN_SRC clojure :results silent
+(cc-active-synth-abstraction rb ::rb-handler)
+;; (def handler1 (cc-rate-active-synth-abstraction rb))
+#+END_SRC
+
+[[file:~/repos/apollo-supercollider/steps.org][file:~/repos/apollo-supercollider/steps.org]]
+[[file:~/repos/apollo-supercollider/steps.org::*def atoms][def atoms]]
+link broken (use above) and search
+[[id:28E86AB4-032F-47BB-A094-012BDE22C686][the big ungainly cc-active-synth abstraction]]
+
+
+
+#+BEGIN_SRC clojure :results silent
+   (cc-active-synth-abstraction [active-synth double-colon-name]
+                            (on-event [:midi :control-change]
+               (fn [{cc-channel :note vel :velocity}]
+                 (cond (= cc-channel 1) (ctl active-synth :cc0-1 (scale-range vel 1 127 @cc0-1-lo @cc0-1-hi))
+                       (= cc-channel 2) (ctl active-synth :cc0-2 (scale-range vel 1 127 @cc0-2-lo @cc0-2-hi))
+                       (= cc-channel 3) (ctl active-synth :cc0-3 (scale-range vel 1 127 @cc0-3-lo @cc0-3-hi))
+                       (= cc-channel 4) (ctl active-synth :cc0-4 (scale-range vel 1 127 @cc0-4-lo @cc0-4-hi))
+                       (= cc-channel 5) (do (reset! cc0-1-lo (scale-range vel 1 127 20 200)) (reset! cc0-2-lo (scale-range vel 1 127 0.5 10)) (println (str @cc0-1-lo) (str @cc0-2-lo)))
+                       (= cc-channel 6) (do (reset! cc0-1-hi (scale-range vel 1 127 500 2000)) (reset! cc0-2-hi (scale-range vel 1 127 10 50)) (println (str @cc0-1-hi) (str @cc0-2-hi)))
+                       (= cc-channel 7) (do (reset! cc0-3-lo vel) (reset! cc0-4-lo vel))
+                       (= cc-channel 8) (do (reset! cc0-3-hi vel) (reset! cc0-4-hi vel))
+                       ))
+               double-colon-name))
+#+END_SRC
+*** use the slow-grain-reverb with some kind of deref
+  
+#+begin_src clojure
+(definst slow-grain-reverb [b 0 trigger-rate 1 centerpos 1 grain-dur 0.5] 
+(let [trigger-rate (impulse:ar trigger-rate)]
+    (free-verb
+           (t-grains:ar 1 ;; num-channel
+                       trigger-rate
+                        b ;; bufnum
+                        1 ;; rate
+                        centerpos
+                        grain-dur
+                        0 ;; pan
+                        1 ;; amp
+                        2 ;; interp
+                        )
+           :mix 0.2
+           :damp 0.1
+           :room 0.9)))
+#+end_src
+
+#+RESULTS:
+: #<instrument: slow-grain-reverb>
+
+This uses derefencing
+
+#+BEGIN_SRC clojure :results silent
+  ;; (defn make-synth-ctl [synth midi-channel synth-param]
+  ;;   (fn [{cc-channel :note val :velocity chan :channel}]
+  ;;     (if (= chan midi-channel)
+  ;;       (cond (= cc-channel 1) (do (reset! cc1-1 (* (inc val) @cc5-1))
+  ;;                                  (ctl synth (keyword synth-param) @cc1-1)
+  ;;                                  (println "cc1-1:" @cc1-1))))))
+#+end_src
+
+
+
+#+begin_src clojure
+(on-event [:midi :control-change]
+          (make-synth-ctl slow-grain-reverb 1 'centerpos)
+          :abstraction-cc-synth)
+
+
+#+END_SRC
+
+#+begin_src clojure
+(slow-grain-reverb)
+#+end_src
+
+
+* automate TGrains listening
+** use line:kr to move through centerpos
+:PROPERTIES:
+:ID:       326223F4-AA19-4058-A07C-3E5F5DB9AFF5
+:END:
+
+Is there a problem with this one?
+
+#+BEGIN_SRC clojure :results silent
+  (defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
+    (out 0 (pan2 
+            (let [track-len (buf-dur:kr buffer)
+                  trate trate
+                  dur (/ dur-numerator trate)
+                  clk (impulse:ar trate)
+                  centerpos (line:kr centerpos track-len (* duration-mult track-len))  ]
+              (t-grains:ar 1
+                           clk
+                           buffer
+                           1
+                           centerpos
+                           dur
+                           0
+                           amp
+                           2)))))
+#+END_SRC
+
+Plays almost exactly like regular track
+
+#+BEGIN_SRC clojure :results silent
+(def gold-line (tgrains-line-synth :buffer 7))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def yanc-line (tgrains-line-synth :buffer 1))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def gold-line3 (tgrains-line-synth :trate 0.5 :duration-mult 3 :dur-numerator 8))
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(ctl gold-line3  :trate 0.3 :dur-numerator 12)
+#+END_SRC
+
+#+RESULTS:
+: #<synth-node[live]: user/tgrains-line-synth 685>
+
+* Mastering Granular Synthesis
+  :PROPERTIES:
+  :VISIBILITY: content
+  :END:
+** t-grains documentation
+#+BEGIN_SRC clojure 
+overtone.core/t-grains
+([num-channels trigger bufnum rate center-pos dur pan amp interp])
+  
+  [num-channels 2, trigger 0, bufnum 0, rate 1, center-pos 0, dur 0.1, pan 0.0, amp 0.1, interp 4]
+
+  num-channels - Number of output channels 
+  trigger      - At each trigger, the following 
+                 arguments are sampled and used as 
+                 the arguments of a new grain. A 
+                 trigger occurs when a signal 
+                 changes from <= 0 to > 0. If the 
+                 trigger is audio rate then the 
+                 grains will start with sample 
+                 accuracy. 
+  bufnum       - The index of the buffer to use. 
+                 It must be a one channel (mono) 
+                 buffer. 
+  rate         - 1.0 is normal, 2.0 is one octave 
+                 up, 0.5 is one octave down -1.0 
+                 is backwards normal rate. Unlike 
+                 PlayBuf, the rate is multiplied 
+                 by BufRate, so you needn't do 
+                 that yourself. 
+  center-pos   - The position in the buffer in 
+                 seconds at which the grain 
+                 envelope will reach maximum 
+                 amplitude. 
+  dur          - Duration of the grain in seconds 
+  pan          - A value from -1 to 1. Determines 
+                 where to pan the output in the 
+                 same manner as PanAz. 
+  amp          - Amplitude of the grain. 
+  interp       - 1,2,or 4. Determines whether the 
+                 grain uses (1) no interpolation, 
+                 (2) linear interpolation, or (4) 
+                 cubic interpolation. 
+
+  Sample playback from a buffer with fine control for doing 
+  granular synthesis. Triggers generate grains from a single 
+  channel (mono) buffer. Each grain has a Hann envelope 
+  (sin^2(x) for x from 0 to pi) and is panned between two 
+  channels of multiple outputs. 
+#+END_SRC
+
+** SLOW-GRAIN-REVERB: dedicated instrument abstraction for t-grains synths
+:PROPERTIES:
+:END:
+
+#+BEGIN_SRC clojure :results silent
+;; defaults to buffer 0 (slow-goldberg, in this project)
+  ;; #<buffer-info: 184.540590s mono 0>
+
+  (definst slow-grain-reverb [b 0 trigger-rate 1 centerpos 1 grain-dur 0.5] 
+(let [trigger-rate (impulse:ar trigger-rate)]
+    (free-verb
+           (t-grains:ar 1 ;; num-channel
+                       trigger-rate
+                        b ;; bufnum
+                        1 ;; rate
+                        centerpos
+                        grain-dur
+                        0 ;; pan
+                        1 ;; amp
+                        2 ;; interp
+                        )
+           :mix 0.2
+           :damp 0.1
+           :room 0.9)))
+
+
+
+#+END_SRC
+
+
+** misc. manipulations with slow-grain-reverb
+
+#+BEGIN_SRC clojure :results silent
+(slow-grain-reverb :b 0)
+#+END_SRC
+
+
+#+BEGIN_SRC clojure :results silent
+(ctl slow-grain-reverb :trigger-rate 0.5 :centerpos 4 :grain-dur 1)
+#+END_SRC
+
+** following manipulation attempts fail?
+
+#+BEGIN_SRC clojure :results silent
+(ctl slow-grain-reverb :trigger-rate 0.3 :centerpos (tenth-inc 0.4) :grain-dur 2)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(def nome (metronome 60))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(ctl slow-grain-reverb :trigger-rate 0.3 :centerpos (* (nome) 0.5) :grain-dur 2)
+#+END_SRC
+
+
+** general-tgrains as a synth
+   :PROPERTIES:
+   :ID:       5C575441-0230-4F0B-8F5D-257821ECBA92
+   :END:
+#+BEGIN_SRC clojure
+  (defsynth general-tgrains-synth
+    "my main granular synthesis abstraction (in stereo!)"
+    [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:ar trate)
+          centerpos centerpos]
+      (out 0 (pan2 
+              (t-grains:ar 1      ;; num of channels in the output?
+                           clk    ;; aka 'trigger-rate'
+                           buffer ;; number of buffer passed in
+                           1      ;; playback "speed" of grain
+                           centerpos ;;
+                           dur    ;; length of grain
+                           0      ;; pan
+                           amp    ;; amplitude
+                           2      ;; interpolation type
+                           )))))
+#+END_SRC
+
+#+RESULTS:
+: #<synth: general-tgrains-synth>
+
+#+BEGIN_SRC clojure
+(def gold (general-tgrains-synth :buffer 0 :centerpos (line:kr 0.0 100 30)))
+#+END_SRC
+
+** general-tgrains with t-randomness
+:PROPERTIES:
+:ID:       74504A58-C963-4B11-AEE5-6411D5A37CF4
+:END:
+#+BEGIN_SRC clojure
+  (defsynth general-trand-synth
+    "stochastic granular synthesis abstraction (in stereo!)"
+    [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0]
+    (let [trate trate
+          dur (/ dur-numerator trate)
+          clk (impulse:kr trate)
+          centerpos (+ centerpos (t-rand:kr 0 0.01 clk))]
+      (out 0 (pan2 
+              (t-grains:ar 1      ;; num of channels in the output?
+                           clk    ;; aka 'trigger-rate'
+                           buffer ;; number of buffer passed in
+                           1      ;; playback "speed" of grain
+                           centerpos ;;
+                           dur    ;; length of grain
+                           0      ;; pan
+                           amp    ;; amplitude
+                           2      ;; interpolation type
+                           )))))
+#+END_SRC
+
+#+RESULTS:
+: #<synth: general-trand-synth>
+
+#+BEGIN_SRC clojure
+(def gtrand-synth1 (general-trand-synth 1))
+#+END_SRC
+
+#+RESULTS:
+: #'user/gtrand-synth1
+
+#+BEGIN_SRC clojure 
+(ctl gtrand-synth1 :centerpos 100)
+#+END_SRC
+
+#+RESULTS:
+: #<synth-node[live]: user/general-trand-synth 55>
+
+* granular synth examples in sclang
+** examples to be translated to Overtone
+*** supercollider TGrain examples
+#+END_SRC
+
+#+BEGIN_SRC sclang 
+  b = Buffer.read(s, Platform.resourceDir +/+ "sounds/full-time-mono.wav");
+#+END_SRC
+
+#+BEGIN_SRC sclang 
+  //   ~variation1 = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/apollo-variation1-mono.wav");
+b = Buffer.read(s, Platform.resourceDir +/+ "sounds/all-mono/apollo-variation1-mono.wav");
+#+END_SRC
+#+COMMENT change /clk/=Dust, dur= 4 / trate
+*** uses dust!
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur, clk, pos, pan;
+          trate = MouseY.kr(8,120,1);
+          dur = 4 / trate;
+          clk = Dust.kr(trate);
+          pos = MouseX.kr(0,BufDur.kr(b)) + TRand.kr(0, 0.01, clk);
+          pan = WhiteNoise.kr(0.6);
+          TGrains.ar(2, clk, b, 1, pos, dur, pan, 1);
+  }.play;
+  )
+#+END_SRC
+*** some flanging
+#+COMMENT change /trate/= depends on MouseY and some Triangle+Lin regularity
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur, clk, pos, pan;
+          trate = LinExp.kr(LFTri.kr(MouseY.kr(0.1,2,1)),-1,1,8,120);
+          dur = 12 / trate;
+          clk = Impulse.ar(trate);
+          pos = MouseX.kr(0,BufDur.kr(b));
+          pan = WhiteNoise.kr(0.6);
+          TGrains.ar(2, clk, b, 1, pos, dur, pan, 1);
+  }.play;
+  )
+#+END_SRC
+*** TRand on centerpos makes more natural grains
+#+COMMENT change /dur/= small sensitive to MouseY
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur, clk, pos, pan;
+          trate = 12;
+          dur = MouseY.kr(0.2,24,1) / trate;
+          clk = Impulse.kr(trate);
+          pos = MouseX.kr(0,BufDur.kr(b)) + TRand.kr(0, 0.01, clk);
+          pan = WhiteNoise.kr(0.6);
+          TGrains.ar(2, clk, b, 1, pos, dur, pan, 1);
+  }.play;
+  )
+#+END_SRC
+*** non Mouse controlled
+#+COMMENT change /pos/= BrownNoise sensitive, jumping around (with Integrator.kr)
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur, clk, pos, pan;
+          trate = 100;
+          dur = 8 / trate;
+          clk = Impulse.kr(trate);
+          pos = Integrator.kr(BrownNoise.kr(0.001));
+          pan = WhiteNoise.kr(0.6);
+          TGrains.ar(2, clk, b, 1, pos, dur, pan, 0.5);
+  }.play;
+  )
+#+END_SRC
+*** [#A] use TGrain playback rate with randomness to skew pitch etc (long grains overlap)
+#+COMMENT change /rate/= dependent on exponential whitenoise
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur, clk, pos, pan;
+          trate = MouseY.kr(1,400,1);
+          dur = 8 / trate;
+          clk = Impulse.kr(trate);
+          pos = MouseX.kr(0,BufDur.kr(b));
+          pan = WhiteNoise.kr(0.8);
+          TGrains.ar(2, clk, b, 2 ** WhiteNoise.kr(2), pos, dur, pan, 1);
+  }.play;
+  )
+#+END_SRC
+*** change pitch with Playback--shorter single grains
+#+COMMENT change /pos/ WhiteNoise, /center pos/=Xmouse sensitive,
+# /pan/=White Noise
+#+BEGIN_SRC sclang :tangle "~/Documents/working-directory/apollosc.sc"
+  (
+  {
+          var trate, dur;
+          trate = MouseY.kr(2,120,1);
+          dur = 1.2 / trate;
+          TGrains.ar(2, Impulse.ar(trate), b, (1.2 ** WhiteNoise.kr(3).round(1)), MouseX.kr(0,BufDur.kr(b)), dur, WhiteNoise.kr(0.6), 1);
+  }.play;
+  )
+#+END_SRC
+** manipulating best of sc Gran examples
+#+BEGIN_SRC sclang
+(
+{
+        var trate, dur, clk, pos, pan;
+        trate = MouseY.kr(1,400,1);
+        dur = 8 / trate;
+        clk = Impulse.kr(trate);
+        pos = MouseX.kr(0,BufDur.kr(b));
+        pan = WhiteNoise.kr(0.8);
+        TGrains.ar(2, clk, b, 1, pos, dur, pan, 1);
+}.play;
+)
+
+#+END_SRC
+* top-level vars for use with t-grains
+** t-grains arg as plain text
+- trigger
+- bufnum
+- rate
+- centerpos
+- dur
+- pan
+- amp
+- interp
+** local t-grains passed
+- trate
+- dur
+- clk
+- pos
+- pan<
