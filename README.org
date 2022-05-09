@@ -1,1 +1,196 @@
-* Start
+* Start up
+
+** Start the repl in the terminal in the right directory
+
+*** use the terminal
+
+In the old case it was post-tonal-overtone.
+
+[[file:~/repos/post-tonal-overtone/][file:~/repos/post-tonal-overtone/]]
+
+#+begin_src shell
+cd ~/repos/post-tonal-overtone
+#+end_src
+
+But now...
+
+[[file:~/repos/granularite/][file:~/repos/granularite/]]
+
+#+begin_src shell
+cd ~/repos/granularite/
+#+end_src
+
+I.e. go to the project directory
+
+483059964358
+
+and then
+
+#+begin_src shell
+lein repl
+#+end_src
+
+#+begin_src shell
+oi@ois-iMac post-tonal-overtone % lein repl
+nREPL server started on port 54069 on host 127.0.0.1 - nrepl://127.0.0.1:54069
+REPL-y 0.5.1, nREPL 0.8.3
+Clojure 1.10.1
+Java HotSpot(TM) 64-Bit Server VM 15.0.1+9-18
+    Docs: (doc function-name-here)
+          (find-doc "part-of-name-here")
+  Source: (source function-name-here)
+ Javadoc: (javadoc java-object-or-class-here)
+    Exit: Control+D or (exit) or (quit)
+ Results: Stored in vars *1, *2, *3, an exception in *e
+#+end_src
+
+Now, to interact from emacs...
+
+cider-connect
+
+will find the localhost and the port
+
+Cider however Will complain about not having the cider-nrepl
+
+see for gran synths in supercollider code
+[[file:1627657623-horripilation.org][file:~/repos/org-new/1627657623-horripilation.org]]
+[[file:1627657623-horripilation.org::*supercollider again][supercollider again]]
+
+*** or run cider-jack-in from a clojure project
+
+** sound test
+
+Don't forget to turn on any devices you need for the session, such as MIDI controller.
+
+"Load" aka use overtone
+
+#+begin_src clojure
+(use 'overtone.live)
+#+end_src
+
+You'll want to have these blocks open in a file in a directory from which you are running the Clojure instance.
+
+
+#+begin_src clojure
+(stop)
+#+end_src
+
+#+RESULTS:
+
+* Understand event-handling with refs and a MIDI controller            :midi:
+
+** helpful links
+
+[[file:all-apollos.org::*note-on ON-EVENTER (note-on event handler for ANY active synth!)][note-on ON-EVENTER (note-on event handler for ANY active synth!)]]
+
+[[file:all-apollos.org::*cc-change ON-EVENTER][cc-change ON-EVENTER]]
+
+[[file:all-apollos.org::*build large event handler (using "on-event")][build large event handler (using "on-event")]]
+
+[[file:all-apollos.org::*use refs for setting values of synth parameters][use refs for setting values of synth parameters]]
+
+** potentially useful
+
+create a "liked-values" atom reference
+[[id:EEC0B1AC-D5F4-40F8-ACDF-629441E38812][define refs (for full composing with high-level granular synth)]]
+
+** weird references
+
+[[file:~/repos/org/secondary/programming-journals/personal-2018/1524943071-acatalectic.org][file:~/repos/org/secondary/programming-journals/personal-2018/1524943071-acatalectic.org]]
+[[id:F14EC44C-04DE-4611-B8C0-9D5355536765][control channel atoms aplenty, with accompanying ~on-event~]]
+
+** Minilogue complete CC numbers
+
+#+begin_src js
+var cctls = [
+    { name: "VCO 1 PITCH", cc: 34 },
+    { name: "VCO 2 PITCH", cc: 35 },
+    
+    { name: "VCO 1 SHAPE", cc: 36 },
+    { name: "VCO 2 SHAPE", cc: 37 },
+
+    { name: "VCO 1 LEVEL", cc: 39 },
+    { name: "VCO 2 LEVEL", cc: 40 },
+    { name: "NOISE", cc: 33 },
+
+    { name: "CROSS MOD DEPTH", cc: 41 },
+    { name: "PITCH EG INT", cc: 42 },
+
+    { name: "FILTER CUTOFF", cc: 43 },
+    { name: "FILTER RESONANCE", cc: 44 },
+    { name: "FILTER EG INT", cc: 45 },
+
+    { name: "AMP EG ATTACK", cc: 16 },
+    { name: "AMP EG DECAY", cc: 17 },
+    { name: "AMP EG SUSTAIN", cc: 18 },
+    { name: "AMP EG RELEASE", cc: 19 },
+
+    { name: "EG ATTACK", cc: 20 },
+    { name: "EG DECAY", cc: 21 },
+    { name: "EG SUSTAIN", cc: 22 },
+    { name: "EG RELEASE", cc: 23 },
+
+    { name: "LFO RATE", cc: 24 },
+    { name: "LFO DEPTH", cc: 26 },
+    { name: "VOICE DEPTH", cc: 27 },
+
+    { name: "DELAY HI PASS", cc: 29 },
+    { name: "DELAY TIME", cc: 30 },
+    { name: "DELAY FEEDBACK", cc: 31 },
+
+    { name: "OCTAVE VCO 1", cc: 48 },
+    { name: "OCTAVE VCO 2", cc: 49 },
+
+    { name: "WAVE VCO 1", cc: 50 },
+    { name: "WAVE VCO 2", cc: 51 },
+
+    { name: "LFO TARGET", cc: 56 },
+    { name: "LFO EG MOD", cc: 57 },
+    { name: "LFO WAVE", cc: 58 },
+
+    { name: "SYNC", cc: 80 },
+    { name: "RING", cc: 81 },
+
+    { name: "VELOCITY KEY TRACK", cc: 82 },
+    { name: "KEY TRACK", cc: 83 },
+    { name: "FILTER TYPE", cc: 84 },
+
+    { name: "DELAY OUTPUT ROUTING", cc: 88 }
+
+#+end_src
+
+** on-event basic print out
+
+Won't print out events without the evaluation having been in the REPL!
+#+begin_src clojure
+
+  (on-event [:midi :note-on]
+	    (fn [m]
+	      (println (type (:velocity-f m))))
+	    ::midi-debug-via-type)
+#+end_src
+
+#+RESULTS:
+: :added-async-handler
+
+#+begin_src clojure
+(remove-event-handler ::midi-debug-via-type)
+#+end_src
+
+#+RESULTS:
+: :handler-removed
+
+#+begin_src clojure
+(on-event [:midi :note-on]
+	    (fn [m]
+	      (println (:velocity-f m)))
+	    ::midi-debug-vel)
+#+end_src
+
+#+RESULTS:
+: :added-async-handler
+
+
+#+begin_src clojure
+(remove-event-handler ::midi-debug-vel)
+#+end_src

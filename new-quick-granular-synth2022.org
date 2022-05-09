@@ -21,12 +21,16 @@ clojure and overtone installed and up and running with a MIDI controller connect
 :END:
 
 *** need a NOT-HARDCODED-PATH to local sounds
-#+begin_src clojure
-    ;; (def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
- (def path-to-sounds "/Users/oi/Documents/sounds/")
-  ;; (def path-to-mono (str path-to-sounds "sounds/all-mono/"))
 
+#+begin_src clojure
+  ;; (def local-machine "Users/oi")
+    ;; (def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
+  ;; (def path-to-sounds (str local-machine "/Documents/sounds/"))
+     ;; (def path-to-mono (str path-to-sounds "sounds/all-mono/"))
+(def path-to-sounds (str "~/Documents/sounds/"))
 #+end_src
+
+"/Users/oi/Documents/sounds/brown30-mono.wav"
 
 #+begin_src clojure
 (def variation1 (load-sample (str path-to-sounds "brown30-mono.wav")))
@@ -92,7 +96,7 @@ Don't show them here!
 (def variation3 (load-sample (str path-to-sounds "SHORT-slow-Indian-dulcimer-MONO.wav")))
 #+end_src
 
-  #+BEGIN_SRC clojure :session getting-started
+#+BEGIN_SRC clojure :session getting-started
 (defsynth reverb-on-left []
   (let [dry (play-buf 1 variation3)
     wet (free-verb dry 1)]
@@ -126,12 +130,12 @@ Don't show them here!
 #+end_src
 
 #+begin_src clojure
-(def line-for-variation3 (tgrains-line-synth variation4))
+(def line-for-variation4 (tgrains-line-synth variation4))
 #+end_src
 
 * Medium quick
 
-** now try to interact with buffer using MIDI
+** to interact with buffer using MIDI, start with mouse
 :PROPERTIES:
 :header-args: :results silent
 :END:
@@ -178,46 +182,125 @@ Don't show them here!
 (stop)
 #+end_src
 
+** see README for what the minilogue has
+[[file:README.org][file:~/repos/granularite/README.org]]
+[[file:README.org::*Minilogue complete CC numbers][Minilogue complete CC numbers]]
+
 ** begin setting up MIDI and refs
 
-*** refs
-#+BEGIN_SRC clojure :results silent
-(def cc0-1-lo (atom 100))
-(def cc0-1-hi (atom 1000))
-(def cc0-2-lo (atom 1))
-(def cc0-2-hi (atom 30))
-(def cc0-3-lo (atom 0.1))
-(def cc0-3-hi (atom 1))
-(def cc0-4-lo (atom 0.1))
-(def cc0-4-hi (atom 1000))
+*** "simple" explanation
+Explain ... in order understand what you want to do.
 
+- changing knobs on the Minilogue
+  - change aspects of the currently playing sound
+
+So, this can happen a few different ways.
+
+The last time I did this I relied on
+
+- a particular synth defintion
+- an event-handler function
+  - this function relied on the synth being called with certain argument "prefixs"
+
+*** set-up defintions
+
+[[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
+[[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
+
+#+NAME: minirand-ccgrain-no-line
+#+BEGIN_SRC clojure :results silent
+ (defsynth minirand-ccgrain-no-line
+   "Summary of arglist: buffer; trate; amp; centerpos..."
+   [buffer 0 
+    cc34 1 ; trate
+    cc35 12 ; numerator
+    cc36 0 ; centerpos
+    cc37 0.8 
+    cc41 0.01]
+   (let [trate cc34 ;;(mouse-y:kr 0.5 20)
+         track-len (buf-dur:kr buffer)
+         dur (/ cc35 trate)
+         clk (impulse:kr trate)
+         line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
+         ]
+     (out 0 (pan2 
+             (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
+                          line-centerpos dur
+                          0 cc37 2)))))
 
 #+END_SRC
 
-*** event handler
+#+NAME: cc-minilogue1-grains-event-handler
 #+BEGIN_SRC clojure :results silent
-(defn cc-minilogue1-reverb [active-synth double-colon-name]
+(defn cc-minilogue1-grains [active-synth double-colon-name]
   (on-event
    [:midi :control-change]
    (fn [{cc-channel :note vel :velocity}]
      (case cc-channel
-       16 (ctl active-synth :room16 (scale-range vel 1 127 0.1 10))
-       17 (ctl active-synth :rev17 (scale-range vel 1 127 0.1 5))
-       18 (ctl active-synth :damp18 (scale-range vel 1 127 0 1))
-       19 (ctl active-synth :input19 (scale-range vel 1 127 0 1))
-       20 (ctl active-synth :dry20 (scale-range vel 1 127 0.1 2))
-       21 (ctl active-synth :early21 (scale-range vel 1 127 0.1 1))
-       22 (ctl active-synth :tail22 (scale-range vel 1 127 0.1 1))
-       23 (ctl active-synth :max23 (scale-range vel 1 127 1 400))
-       43 (ctl active-synth :amp (scale-range vel 1 127 0.001 0.01))
+       34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+       35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+       36 (ctl active-synth :cc36 (scale-range vel 1 127 0 100)) 
+;; consider the following for a choppier, but actual buf-dur length
+;; (ctl active-synth :cc36 (scale-range vel 1 127 0 190))
+       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+       41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+       :else nil
        ))
    double-colon-name))
 #+END_SRC
 
+*** playback and realtime calls
+#+NAME: apotheose-cloud
 #+BEGIN_SRC clojure :results silent
-(cc-minilogue1-reverb short-a ::shortay)
+(def obessive (minirand-ccgrain-no-line 1))
+#+END_SRC
+
+#+NAME: apotheose-cloud-handler
+#+BEGIN_SRC clojure :results silent
+(cc-minilogue1-grains obessive ::obess)
 #+END_SRC
 
 #+BEGIN_SRC clojure :results silent
-(remove-event-handler ::shortay)
+(remove-event-handler ::obess)
 #+END_SRC
+
+
+*** notes on controlling
+
+VCO1 Shape is 36, which seems powerful
+
+Cross-mod depth is 41, which is slow to take effect
+
+VCO1 Pitch is 34, which is slow to take effect and most noticeable after 36
+
+** understanding the synths
+
+*** documentation for t-grains
+
+[[file:granulars-copied-from-post-tonal.org::*t-grains documentation][t-grains documentation]]
+
+[[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
+
+#+begin_src clojure
+		  [num-channels 2, ;; output
+		   trigger 0, ;; "at each trigger"
+		   bufnum 0, 
+		   rate 1, ;; 2.0 octave up, 0.5 down, -1. backwards
+		   center-pos 0, ;; position in seconds
+		   dur 0.1, ;; duration of grain
+		   pan 0.0, ;; -1 to 1, is left to right
+		   amp 0.1, ;; amplitude of grain
+		   interp 4 ;; interpolaltion can be none, linear, cubic
+		   ]
+#+end_src
+
+
+| num-channels | x    |
+| trigger      | x    |
+| bufnum       | x    |
+| rate         | cc34 |
+| center-pos   | cc35 |
+| dur          | cc36 |
+| pan          | cc37 |
+| amp          | cc41 |
+| interp       |      |
