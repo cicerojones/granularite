@@ -109,11 +109,15 @@ Don't show them here!
 
 *** any difference between an inst and a synth def?
 
+Just to hear what the plain, whole variation3 sounds like (it's short!)
+
 #+BEGIN_SRC clojure
 (definst gran1 [] (play-buf 1 variation3))
 
 (gran1)
 #+END_SRC
+
+Let's get a longer sample
 
 *** try again with the granular synth using a line
 
@@ -275,7 +279,8 @@ Apart from this, all you can really do is give a name to the event handler you a
 
 #+NAME: apotheose-cloud
 #+BEGIN_SRC clojure :results silent
-(def obessive (minirand-ccgrain-no-line 1))
+  (def obessive (minirand-ccgrain-no-line 1))
+  ;; (def obessive (minirand-ccgrain-no-line 2)) 
 #+END_SRC
 
 #+NAME: apotheose-cloud-handler
@@ -295,7 +300,7 @@ VCO1 Shape is 36 (centerpos), which relatively quickly takes a noticeable effect
 It is used in the following way, affecting the center position
 
 #+begin_src clojure
-line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
+;; line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
 #+end_src
 
 Cross-mod depth is 41, which is slow to take effect as part of the t-rand.
@@ -375,9 +380,13 @@ For context
 
 ** new synth with "no line"
 
+consider whether to use the short "1" buffer or the longer (30-seconds) "2" buffer.
+
 #+NAME: apotheose-cloud
 #+BEGIN_SRC clojure :results silent
-(def obessive (minirand-ccgrain-no-line 1))
+    (def obessive (minirand-ccgrain-no-line 2))
+
+  ;; (def obessive (minirand-ccgrain-no-line 1))
 #+END_SRC
 
 ** atoms
@@ -414,6 +423,24 @@ That's right 36!
 That is, setting the offset and then setting how "far" the line is being sent.
 
 Doesn't seem to do much :(
+
+Unless, you have a longer sound file in there.
+
+And you proceed systematically through changing the refs.
+
+minimize 35 to make for "tremolo" amplitude effect
+
+tailor 34 for speed or "rate" of tremolo
+
+minimize 41 to limit the "mechanicalness" of the playback
+
+Then go to 36 to dial around the centerpos.
+
+This will then make change to 18 and 22 more noticeable.
+
+Your "dialing" around will seem more different if you modify these at the same time as spinning 36.
+
+
 
 #+BEGIN_SRC clojure :results silent
     (defn mini-scaling-test [active-synth double-colon-name]
