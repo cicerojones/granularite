@@ -72,6 +72,8 @@ clojure and overtone installed and up and running with a MIDI controller connect
 #+end_src
 
 
+
+
 ** load a different sound source
 :PROPERTIES:
 :header-args: :results silent
@@ -170,7 +172,7 @@ Don't show them here!
 				 0 amp 2 ) )))))
 #+END_SRC
 
-#+BEGIN_SRC clojure :results output
+#+BEGIN_SRC clojure :results silent
 (def pasdaction-grand (mouse-rand-grain3 variation4 :amp 0.1))
 #+END_SRC
 
@@ -203,6 +205,10 @@ The last time I did this I relied on
   - this function relied on the synth being called with certain argument "prefixs"
 
 *** set-up defintions
+
+See the following link to all-apollos.
+
+Provides context for understanding the use of "cc refs" in this function.
 
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
 [[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
@@ -267,12 +273,49 @@ The last time I did this I relied on
 
 *** notes on controlling
 
-VCO1 Shape is 36, which seems powerful
+VCO1 Shape is 36, which relatively quickly takes a noticeable effect.
 
-Cross-mod depth is 41, which is slow to take effect
+It is used in the following way, affecting the center position
 
-VCO1 Pitch is 34, which is slow to take effect and most noticeable after 36
+#+begin_src clojure
+line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
+#+end_src
 
+Cross-mod depth is 41, which is slow to take effect as part of the t-rand.
+
+As it sets the "hi" value, it has a most noticeable effect on the "width", say, of the range of random numbers generated.
+
+#+begin_src clojure
+overtone.live/t-rand
+([lo hi trig])
+  
+  [lo 0.0, hi 1.0, trig 0.0]
+
+  lo   - Minimum value of generated float 
+  hi   - Maximum value of generated float 
+  trig - Trigger signal 
+
+  Generates a random float value in uniform distribution 
+  from lo to hi each time the trig signal changes from 
+  nonpositive to positive values 
+
+#+end_src
+
+
+
+VCO1 Pitch is 34, which is slow to take effect and most noticeable after 36.
+
+34 works as part of the "clk" to affect the rate at which the t-rand is triggered.
+
+37 is the amplitude
+
+35 is the "dur-numerator", which will affect the relative "duration" of each grain.
+
+A low enough value creates a kind of "tremolo" effect of volume going in and out.
+
+34 and 35 work together nicely.
+
+A low enough value for 41 creates a largely "mechanical" effect, with the randomness eliminated.
 ** understanding the synths
 
 *** documentation for t-grains
