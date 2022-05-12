@@ -155,18 +155,12 @@ Let's get a longer sample
 
 
 Note how this synth differs (from tgrains-line-synth) in its use of a "line" for centerpos.
+Doc string
+"Summary of arglist: buffer; trate; amp; centerpos; AND then reverb args...
+ roomsize; revtime; damping; inputbw; drylevel; earlyreflevel; taillevel; maxroomsize"
 
 #+BEGIN_SRC clojure :results silent
-  (defsynth mouse-rand-grain3
-    "Summary of arglist: buffer; trate; amp; centerpos; AND then reverb args...
-  roomsize; revtime; damping; inputbw; drylevel; earlyreflevel; taillevel; maxroomsize"
-    [buffer 0 trate 1
-     dur-numerator 12 amp 0.8
-     centerpos 0 roomsize 10
-     revtime 5 damping 0.5
-     inputbw 0.2 drylevel 0.1
-     earlyreflevel 0.7 taillevel 0.5
-     maxroomsize 300]
+  (defsynth mouse-rand-grain3  [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0 roomsize 10 revtime 5 damping 0.5 inputbw 0.2 drylevel 0.1 earlyreflevel 0.7 taillevel 0.5  maxroomsize 300]
     (let [trate (mouse-y:kr 0.5 20)
 	  track-len (buf-dur:kr buffer)
 	  dur (/ dur-numerator trate)
@@ -236,26 +230,20 @@ Apart from this, all you can really do is give a name to the event handler you a
 
 *** actual definitions
 
+   "Summary of arglist: buffer; trate; amp; centerpos..."
 #+NAME: minirand-ccgrain-no-line
 #+BEGIN_SRC clojure :results silent
- (defsynth minirand-ccgrain-no-line
-   "Summary of arglist: buffer; trate; amp; centerpos..."
-   [buffer 0 
-    cc34 1 ; trate
-    cc35 12 ; numerator
-    cc36 0 ; centerpos
-    cc37 0.8 
-    cc41 0.01]
-   (let [trate cc34 ;;(mouse-y:kr 0.5 20)
-         track-len (buf-dur:kr buffer)
-         dur (/ cc35 trate)
-         clk (impulse:kr trate)
-         line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
-         ]
-     (out 0 (pan2 
-             (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
-                          line-centerpos dur
-                          0 cc37 2)))))
+  (defsynth minirand-ccgrain-no-line    [buffer 0 cc34 1 cc35 12 cc36 0 cc37 0.8 cc41 0.01]
+    (let [trate cc34 ;;(mouse-y:kr 0.5 20)
+	  track-len (buf-dur:kr buffer)
+	  dur (/ cc35 trate)
+	  clk (impulse:kr trate)
+	  line-centerpos (+ cc36 (t-rand:kr 0 cc41 clk))
+	  ]
+      (out 0 (pan2 
+	      (t-grains:ar 1 clk buffer 1 ;; cc rand arg, all minilogue cc args
+			   line-centerpos dur
+			   0 cc37 2)))))
 
 #+END_SRC
 
@@ -376,6 +364,13 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 
 * Longer, understanding real uses of "resetting atoms"
 
+** first of all, what are your synth
+
+#+begin_src clojure
+(defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
+(defsynth mouse-rand-grain3  [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0 roomsize 10 revtime 5 damping 0.5 inputbw 0.2 drylevel 0.1 earlyreflevel 0.7 taillevel 0.5  maxroomsize 300]
+(defsynth minirand-ccgrain-no-line [buffer 0 cc34 1 cc35 12 cc36 0 cc37 0.8 cc41 0.01]
+#+end_src
 ** code context
 For context
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
@@ -527,6 +522,10 @@ Your "dialing" around will seem more different if you modify these at the same t
        double-colon-name))
 
 #+end_src
+
+#+RESULTS:
+: #'granularite.core/mini-scaling-test
+
 new cc knobs used
 
 #+begin_src clojure
@@ -553,14 +552,19 @@ Make specific to amplitude?
 (mini-scaling-test obessive ::mini-obsess)
 #+END_SRC
 
+#+begin_src clojure
+(ctl obessive :cc37 10)
+#+end_src
+
+#+RESULTS:
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 46>
+
 #+BEGIN_SRC clojure :results silent
 (remove-event-handler ::mini-obsess)
 ;; (remove-event-handler ::obess)
 #+END_SRC
 
-#+begin_src clojure
-(ctl obessive :cc37 10)
-#+end_src
+
 
 #+RESULTS:
 : #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
@@ -580,6 +584,8 @@ Make specific to amplitude?
 : #'granularite.core/obessive
 
 ** begin documenting update
+
+
 #+begin_src clojure
   (defn update-mini-scaling-test [active-synth double-colon-name]
     (on-event
@@ -620,6 +626,9 @@ Make specific to amplitude?
 	 ))
      double-colon-name))
 #+end_src
+
+#+RESULTS:
+: #'granularite.core/update-mini-scaling-test
 
 #+BEGIN_SRC clojure :results silent
 (update-mini-scaling-test obessive ::update-mini-obsess)
