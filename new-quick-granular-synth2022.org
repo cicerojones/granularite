@@ -451,7 +451,137 @@ Your "dialing" around will seem more different if you modify these at the same t
 
 
 #+BEGIN_SRC clojure :results silent
-  (defn mini-scaling-test [active-synth double-colon-name]
+  ;; (defn mini-scaling-test [active-synth double-colon-name]
+  ;;   (on-event
+  ;;    [:midi :control-change]
+  ;;    (fn [{cc-channel :note vel :velocity}]
+  ;;      (case cc-channel
+
+  ;;        16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+
+  ;;        20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+  ;;        35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+  ;;        36 (ctl active-synth :cc36 (scale-range vel 1 127 @offset (+ @offset @ranger)))
+  ;;        37 (ctl active-synth :cc37 (scale-range vel 1 127 0 @amp-offset))
+  ;;        24 (do (reset! amp-range (* 2 (scale-range vel 1 127 0 1)))
+  ;; 	      (reset! amp-offset (+ @amp-range 10))
+  ;; 	      (ctl active-synth :cc37 @amp-offset))
+
+  ;;        ;; (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+
+  ;;        41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+  ;;        ))
+  ;;    double-colon-name))
+#+END_SRC
+
+
+#+begin_src clojure
+    (defn mini-scaling-test [active-synth double-colon-name]
+      (on-event
+       [:midi :control-change]
+       (fn [{cc-channel :note vel :velocity}]
+	 (case cc-channel
+
+	   16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
+		  (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+	   17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
+		  (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+	   18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
+		  (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+
+	   20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
+		  (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+	   21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
+		  (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+	   22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
+		  (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+		  (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+	   34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+	   35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+	   36 (ctl active-synth :cc36 (scale-range vel 1 127 @offset (+ @offset @ranger)))
+	   37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+	   41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+	   ))
+       double-colon-name))
+
+#+end_src
+new cc knobs used
+
+#+begin_src clojure
+    { name: "AMP EG ATTACK", cc: 16 },
+    { name: "AMP EG DECAY", cc: 17 },
+    { name: "AMP EG SUSTAIN", cc: 18 },
+
+    { name: "EG ATTACK", cc: 20 },
+    { name: "EG DECAY", cc: 21 },
+    { name: "EG SUSTAIN", cc: 22 },
+
+#+end_src
+
+Make specific to amplitude?
+
+#+begin_src clojure
+{ name: "LFO RATE", cc: 24 },
+    { name: "LFO DEPTH", cc: 26 },
+    { name: "VOICE DEPTH", cc: 27 },
+
+#+end_src
+
+#+BEGIN_SRC clojure :results silent
+(mini-scaling-test obessive ::mini-obsess)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::mini-obsess)
+;; (remove-event-handler ::obess)
+#+END_SRC
+
+#+begin_src clojure
+(ctl obessive :cc37 10)
+#+end_src
+
+#+RESULTS:
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
+
+#+begin_src clojure
+(def pianos (load-sample (str path-to-sounds "Classic Electric Piano_bip.6.L.aif")))
+#+end_src
+
+#+RESULTS:
+: #'granularite.core/pianos
+
+#+begin_src clojure
+(def obessive (minirand-ccgrain-no-line 3))
+#+end_src
+
+#+RESULTS:
+: #'granularite.core/obessive
+
+** begin documenting update
+#+begin_src clojure
+  (defn update-mini-scaling-test [active-synth double-colon-name]
     (on-event
      [:midi :control-change]
      (fn [{cc-channel :note vel :velocity}]
@@ -489,54 +619,13 @@ Your "dialing" around will seem more different if you modify these at the same t
 	 41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
 	 ))
      double-colon-name))
-#+END_SRC
-
-new cc knobs used
-#+begin_src clojure
-    { name: "AMP EG ATTACK", cc: 16 },
-    { name: "AMP EG DECAY", cc: 17 },
-    { name: "AMP EG SUSTAIN", cc: 18 },
-
-    { name: "EG ATTACK", cc: 20 },
-    { name: "EG DECAY", cc: 21 },
-    { name: "EG SUSTAIN", cc: 22 },
-
 #+end_src
 
-Make specific to amplitude?
-
-#+begin_src clojure
-{ name: "LFO RATE", cc: 24 },
-    { name: "LFO DEPTH", cc: 26 },
-    { name: "VOICE DEPTH", cc: 27 },
-
-#+end_src
 #+BEGIN_SRC clojure :results silent
-(mini-scaling-test obessive ::mini-obsess)
+(update-mini-scaling-test obessive ::update-mini-obsess)
 #+END_SRC
 
 #+BEGIN_SRC clojure :results silent
-(remove-event-handler ::mini-obsess)
+(remove-event-handler ::update-mini-obsess)
 ;; (remove-event-handler ::obess)
 #+END_SRC
-
-#+begin_src clojure
-(ctl obessive :cc37 10)
-#+end_src
-
-#+RESULTS:
-: #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
-
-#+begin_src clojure
-(def pianos (load-sample (str path-to-sounds "Classic Electric Piano_bip.6.L.aif")))
-#+end_src
-
-#+RESULTS:
-: #'granularite.core/pianos
-
-#+begin_src clojure
-(def obessive (minirand-ccgrain-no-line 3))
-#+end_src
-
-#+RESULTS:
-: #'granularite.core/obessive
