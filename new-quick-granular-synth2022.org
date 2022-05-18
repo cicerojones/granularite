@@ -228,9 +228,13 @@ That is, it really only takes a particular synth as an argument.
 Apart from this, all you can really do is give a name to the event handler you are creating for this synth.
 
 
+
 *** actual definitions
 
-   "Summary of arglist: buffer; trate; amp; centerpos..."
+Strip out the documentation string for org and emacs and ivy searching
+
+"Summary of arglist: buffer; trate; amp; centerpos..."
+
 #+NAME: minirand-ccgrain-no-line
 #+BEGIN_SRC clojure :results silent
   (defsynth minirand-ccgrain-no-line    [buffer 0 cc34 1 cc35 12 cc36 0 cc37 0.8 cc41 0.01]
@@ -273,6 +277,12 @@ Apart from this, all you can really do is give a name to the event handler you a
   (def obessive (minirand-ccgrain-no-line 1))
   ;; (def obessive (minirand-ccgrain-no-line 2)) 
 #+END_SRC
+
+
+So, this is going to enable what?
+
+See just below:
+[[*notes on controlling][notes on controlling]]
 
 #+NAME: apotheose-cloud-handler
 #+BEGIN_SRC clojure :results silent
@@ -320,7 +330,7 @@ VCO1 Pitch is 34, which is slow to take effect and most noticeable after 36.
 
 34 works as part of the "clk" to affect the rate at which the t-rand is triggered.
 
-37 is the amplitude
+37 (VCO2 shape) is the amplitude.
 
 35 is the "dur-numerator", which will affect the relative "duration" of each grain.
 
@@ -367,10 +377,13 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 ** first of all, what are your synth
 
 #+begin_src clojure
-(defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
-(defsynth mouse-rand-grain3  [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0 roomsize 10 revtime 5 damping 0.5 inputbw 0.2 drylevel 0.1 earlyreflevel 0.7 taillevel 0.5  maxroomsize 300]
-(defsynth minirand-ccgrain-no-line [buffer 0 cc34 1 cc35 12 cc36 0 cc37 0.8 cc41 0.01]
+  ;; just for easy reading; NOT FOR EVAL!
+
+    (defsynth tgrains-line-synth [buffer 0 trate 1 dur-numerator 8 amp 0.8 centerpos 0 duration-mult 2]
+    (defsynth mouse-rand-grain3  [buffer 0 trate 1 dur-numerator 12 amp 0.8 centerpos 0 roomsize 10 revtime 5 damping 0.5 inputbw 0.2 drylevel 0.1 earlyreflevel 0.7 taillevel 0.5  maxroomsize 300]
+    (defsynth minirand-ccgrain-no-line [buffer 0 cc34 1 cc35 12 cc36 0 cc37 0.8 cc41 0.01]
 #+end_src
+
 ** code context
 For context
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
@@ -405,7 +418,9 @@ Start this up and then work through the atoms below:
 (def amp-range (atom 0))
 #+END_SRC
 
-** event handler explanations
+** new event handler
+
+*** explanations
 
 Note that /only/ 36 aka centerpos is being affected.
 
@@ -443,49 +458,9 @@ This will then make change to 18 and 22 more noticeable.
 
 Your "dialing" around will seem more different if you modify these at the same time as spinning 36.
 
+*** code blocks
 
-
-#+BEGIN_SRC clojure :results silent
-  ;; (defn mini-scaling-test [active-synth double-colon-name]
-  ;;   (on-event
-  ;;    [:midi :control-change]
-  ;;    (fn [{cc-channel :note vel :velocity}]
-  ;;      (case cc-channel
-
-  ;;        16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-  ;;        17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-  ;;        18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-
-  ;;        20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-  ;;        21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-  ;;        22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
-  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
-  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
-  ;;        34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
-  ;;        35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
-  ;;        36 (ctl active-synth :cc36 (scale-range vel 1 127 @offset (+ @offset @ranger)))
-  ;;        37 (ctl active-synth :cc37 (scale-range vel 1 127 0 @amp-offset))
-  ;;        24 (do (reset! amp-range (* 2 (scale-range vel 1 127 0 1)))
-  ;; 	      (reset! amp-offset (+ @amp-range 10))
-  ;; 	      (ctl active-synth :cc37 @amp-offset))
-
-  ;;        ;; (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
-
-  ;;        41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
-  ;;        ))
-  ;;    double-colon-name))
-#+END_SRC
-
+Slightly updated, on the way to being renamed "updated"
 
 #+begin_src clojure
     (defn mini-scaling-test [active-synth double-colon-name]
@@ -526,6 +501,7 @@ Your "dialing" around will seem more different if you modify these at the same t
 #+RESULTS:
 : #'granularite.core/mini-scaling-test
 
+*** document the minilogue CC knobs
 new cc knobs used
 
 #+begin_src clojure
@@ -548,6 +524,8 @@ Make specific to amplitude?
 
 #+end_src
 
+*** actually call the event-handler
+
 #+BEGIN_SRC clojure :results silent
 (mini-scaling-test obessive ::mini-obsess)
 #+END_SRC
@@ -569,6 +547,8 @@ Make specific to amplitude?
 #+RESULTS:
 : #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
 
+*** use a whole different audio file (elec. piano)
+
 #+begin_src clojure
 (def pianos (load-sample (str path-to-sounds "Classic Electric Piano_bip.6.L.aif")))
 #+end_src
@@ -583,8 +563,50 @@ Make specific to amplitude?
 #+RESULTS:
 : #'granularite.core/obessive
 
+*** old mini-scaling-test block
+  ;; (defn mini-scaling-test [active-synth double-colon-name]
+  ;;   (on-event
+  ;;    [:midi :control-change]
+  ;;    (fn [{cc-channel :note vel :velocity}]
+  ;;      (case cc-channel
+
+  ;;        16 (do (reset! offset-ones (* 1 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        17 (do (reset! offset-tens (* 10 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        18 (do (reset! offset-hundreds (* 100 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! offset (+ @offset-ones @offset-tens @offset-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+
+  ;;        20 (do (reset! ranger-ones (* 1 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        21 (do (reset! ranger-tens (* 10 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        22 (do (reset! ranger-hundreds (* 100 (scale-range vel 1 127 0 99)))
+  ;; 	      (reset! ranger (+ @ranger-ones @ranger-tens @ranger-hundreds))
+  ;; 	      (test active-synth :cc36 @offset (+ @offset @ranger) vel))
+  ;;        34 (ctl active-synth :cc34 (scale-range vel 1 127 0.1 10))
+  ;;        35 (ctl active-synth :cc35 (scale-range vel 1 127 1 24))
+  ;;        36 (ctl active-synth :cc36 (scale-range vel 1 127 @offset (+ @offset @ranger)))
+  ;;        37 (ctl active-synth :cc37 (scale-range vel 1 127 0 @amp-offset))
+  ;;        24 (do (reset! amp-range (* 2 (scale-range vel 1 127 0 1)))
+  ;; 	      (reset! amp-offset (+ @amp-range 10))
+  ;; 	      (ctl active-synth :cc37 @amp-offset))
+
+  ;;        ;; (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+
+  ;;        41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
+  ;;        ))
+  ;;    double-colon-name))
+  
+
 ** begin documenting update
 
+*** new block tries to involve 24 (LFO Rate) for amplitude
 
 #+begin_src clojure
   (defn update-mini-scaling-test [active-synth double-colon-name]
@@ -638,3 +660,9 @@ Make specific to amplitude?
 (remove-event-handler ::update-mini-obsess)
 ;; (remove-event-handler ::obess)
 #+END_SRC
+
+*** for debugging purposes
+
+You want to involve a println somehow...
+
+
