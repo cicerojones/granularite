@@ -665,4 +665,168 @@ Make specific to amplitude?
 
 You want to involve a println somehow...
 
+Here's an example of printing out the values of the refs being affected
+#+begin_src clojure
+(= cc-channel 5) (do (reset! cc0-1-lo (scale-range vel 1 127 20 200)) (reset! cc0-2-lo (scale-range vel 1 127 0.5 10)) (println (str @cc0-1-lo) (str @cc0-2-lo)))
+#+end_src
 
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :control-change]
+            (fn [{note :note vel :velocity}]
+              (cond (= note 2) (do (reset! dst-hi vel)
+                                   (println "dst-hi: " @dst-hi))))
+              ::test-range-high)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::test-range-high)
+#+END_SRC
+
+* using note-on events
+
+** some refs from earlier
+
+#+BEGIN_SRC clojure :results silent
+;;; save "centerpos" values
+  (def liked-values (atom []))
+
+;;; use current-val to hold current 'centerpos' value
+  (def current-val (atom 0))
+
+;;; use cc knob to change high point of maprange destination value
+  (def dst-lo (atom 0.01))
+
+  (def dst-hi (atom 1))
+
+;;; determine trate value
+  (def trate-ref (atom 1))
+
+;;; determine dur-numerator for tgrains duration
+  (def durnumerator-ref (atom 8))
+#+END_SRC
+
+** copied from
+
+[[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
+
+#+begin_src clojure
+  (on-event [:midi :note-on]
+	    (fn [{note :note}]
+	      (println note))
+	    ::print-noteons)
+#+end_src
+
+#+RESULTS:
+: :added-async-handler
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::print-noteons)
+#+END_SRC
+
+#+begin_src clojure
+  (on-event [:midi :note-on]
+	    (fn [{note :note vel :velocity}]
+	      (println (list note vel)))
+	    ::print-noteons-vels)
+#+end_src
+
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::print-noteons-vels)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+  (on-event [:midi :note-on]
+          
+            (fn [{note :note}]
+              (let [val (deref current-val)]
+                (do (reset! current-val (maprange [60 91] [0.0 @dst-hi] note))
+                    (ctl gold :centerpos val)
+                    (println (round2 val 2)))))
+                ::set-current-val-scale-and-play)
+
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(remove-event-handler ::set-current-val-scale-and-play)
+#+END_SRC
+
+** stepping centerpos
+
+#+BEGIN_SRC clojure :results silent
+(defn swap-centerpos-in-samples-pad [active-synth1 active-synth2]
+  (fn [{pad :note}]
+    (case pad
+      36 (do (swap! centerpos1 #(- % 100)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      37 (do (swap! centerpos1 #(- % 1000)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      38 (do (swap! centerpos2 #(- % 100)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      39 (do (swap! centerpos2 #(- % 1000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      40 (do (swap! centerpos1 #(+ % 100)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      41 (do (swap! centerpos1 #(+ % 1000)) (ctl active-synth1 :centerpos (/ @centerpos1 44100)))
+      42 (do (swap! centerpos2 #(+ % 1000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100)))
+      43 (do (swap! centerpos2 #(+ % 10000)) (ctl active-synth2 :centerpos (/ @centerpos2 44100))))))
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+(on-event [:midi :note-on]
+          (swap-centerpos-in-samples-pad yancey-noline goldberg-noline)
+          ::pad-control-yancey-centerpos-in-samples)
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
+;; (remove-event-handler ::pad-control-yancey-centerpos-in-samples)
+#+END_SRC
+
+#+BEGIN_SRC clojure
+(list @centerpos1 @centerpos2)
+#+END_SRC
+
+* helpful ~pprint~ documentation of your buffers
+
+#+begin_src clojure :results output
+  (for [name [variation1 variation3 variation4]]
+    (do  (pprint name) (println)))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{:id 0,
+ :size 1323000,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@3d0d43e1: :live>,
+ :path "/Users/oi/Documents/sounds/brown30-mono.wav",
+ :args {},
+ :name "brown30-mono.wav",
+ :rate-scale 1.0,
+ :duration 30.0,
+ :n-samples 1323000}
+
+{:id 1,
+ :size 916417,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@6b27d58d: :live>,
+ :path
+ "/Users/oi/Documents/sounds/SHORT-slow-Indian-dulcimer-MONO.wav",
+ :args {},
+ :name "SHORT-slow-Indian-dulcimer-MONO.wav",
+ :rate-scale 1.0,
+ :duration 20.780430839002268,
+ :n-samples 916417}
+
+{:id 2,
+ :size 1218206,
+ :n-channels 1,
+ :rate 44100.0,
+ :status #<Atom@6b053255: :live>,
+ :path
+ "/Users/oi/Documents/sounds/30seconds-slow-Indian-dulcimer-MONO.wav",
+ :args {},
+ :name "30seconds-slow-Indian-dulcimer-MONO.wav",
+ :rate-scale 1.0,
+ :duration 27.62371882086168,
+ :n-samples 1218206}
+
+#+end_example
