@@ -1146,6 +1146,7 @@ These refs are used by...which event handlers???
      with keyboard centerpos triggering
 - trate-ref :: set rate of trigger of grains
 - durnumerator-ref :: 
+
 * improve abstraction for cc event handling
    :PROPERTIES:
    :DATE_CREATED: [2017-03-01 Wed 10:00]
@@ -1320,6 +1321,7 @@ Better reporting could be used, as it was hard enough to tell whether
 or how it was working that I had to use a non-granular synth to check
 what was happening.
 
+
 **** define macro from above
 
 C-c C-v g to go to the following block
@@ -1410,6 +1412,7 @@ See granular synth defined for minilogue cc knobs
 (def centerpos2 (atom 0))
 #+END_SRC
 
+
 ** set =centerpos= ref for two synths with pads 36-43
 #+NAME: pad-swapping-event-handler
 #+BEGIN_SRC clojure :results silent
@@ -1426,6 +1429,7 @@ See granular synth defined for minilogue cc knobs
 ;;       43 (do (swap! centerpos2 #(+ % 0.1)) (ctl active-synth2 :centerpos @centerpos2)))))
 #+END_SRC
 
+
 ** granular synth with 6 parameters
 #+NAME: no-line-granular-synth
 #+BEGIN_SRC clojure :results silent
@@ -1441,6 +1445,7 @@ See granular synth defined for minilogue cc knobs
                            0 amp 2 )))))
 #+END_SRC
 
+
 ** instantiate granular synths for yancey and goldberg
 #+NAME: yancey-line-syn
 #+BEGIN_SRC clojure :results silent
@@ -1450,6 +1455,7 @@ See granular synth defined for minilogue cc knobs
 #+BEGIN_SRC clojure :results silent
 (def goldberg-noline (yancey-gran-synth-experimen goldberg-slow))
 #+END_SRC
+
 
 ** use pads to control centerpos of yancey and goldberg
 
@@ -1462,6 +1468,7 @@ See granular synth defined for minilogue cc knobs
 #+BEGIN_SRC clojure :results silent
 ;; (remove-event-handler ::pad-control-yancey-centerpos)
 #+END_SRC
+
 
 ** set ranges for knobs to be used with two synths
 
@@ -1489,6 +1496,7 @@ See granular synth defined for minilogue cc knobs
 #+BEGIN_SRC clojure :results silent
 ;; (remove-event-handler ::yancey-goldberg-redux)
 #+END_SRC
+
 * configure your whole MIDI controller
   :PROPERTIES:
   :ID:       0DDA001F-5EAC-4E8F-A1D0-16EEDBF8F828
@@ -1564,7 +1572,9 @@ calculates track length but doesn't use it?
 #+END_SRC
 
 
+
 ** use "sample number" to move through centerpos values
+
 #+BEGIN_SRC clojure :results silent
 (defn swap-centerpos-in-samples-pad [active-synth1 active-synth2]
   (fn [{pad :note}]
@@ -1595,6 +1605,7 @@ calculates track length but doesn't use it?
 
 #+RESULTS:
 | 71300 | 7323600.1 |
+
 
 * contains definst
 ** use mousex and y for non-MIDI controller interaction 
