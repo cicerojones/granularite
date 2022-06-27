@@ -8,12 +8,22 @@ There is a lot of development work in an older file, not part of this project.
 
 clojure and overtone installed and up and running with a MIDI controller connected?
 
+[[file:README.org][file:~/repos/granularite/README.org]]
+
+No? [[file:README.org::*sound test][sound test]]
+
 #+begin_src clojure
 (demo 10 (sin-osc (abs  (* 10000 (brown-noise:kr)))))
 #+end_src
 
 #+RESULTS:
 : #<synth-node[loading]: granularite.cf44/audition-synth 33>
+
+#+begin_src clojure
+(stop)
+#+end_src
+
+#+RESULTS:
 
 ** 4-5 blocks to get brown-noise sound
 :PROPERTIES:
@@ -72,7 +82,7 @@ clojure and overtone installed and up and running with a MIDI controller connect
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: granularif44/tgrains-line-synth 35>
+: #<synth-node[live]: granularif44/tgrains-line-synth 40>
 
 
 
@@ -270,6 +280,9 @@ Strip out the documentation string for org and emacs and ivy searching
    double-colon-name))
 #+END_SRC
 
+See below explanation for 34, 35 etc.:
+
+[[*notes on controlling][notes on controlling]]
 *** playback and realtime calls
 
 #+NAME: apotheose-cloud
@@ -342,6 +355,7 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 
 ** understanding the synths
 
+
 *** documentation for t-grains
 
 [[file:granulars-copied-from-post-tonal.org::*t-grains documentation][t-grains documentation]]
@@ -362,15 +376,15 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 #+end_src
 
 
-| num-channels | x    |
-| trigger      | x    |
-| bufnum       | x    |
-| rate         | cc34 |
-| center-pos   | cc35 |
-| dur          | cc36 |
-| pan          | cc37 |
-| amp          | cc41 |
-| interp       |      |
+|                 | num-channels | x    |
+|                 | trigger      | x    |
+|                 | bufnum       | x    |
+| VCO1 pitch      | rate         | cc34 |
+| VCO2 Pitch      | center-pos   | cc35 |
+| VCO1 shape      | dur          | cc36 |
+| VCO2 shape      | pan          | cc37 |
+| Cross Mod Depth | amp          | cc41 |
+|                 | interp       |      |
 
 * Longer, understanding real uses of "resetting atoms"
 
