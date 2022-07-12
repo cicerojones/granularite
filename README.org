@@ -68,6 +68,8 @@ Don't forget to turn on any devices you need for the session, such as MIDI contr
 (use 'overtone.live)
 #+end_src
 
+#+RESULTS:
+
 You'll want to have these blocks open in a file in a directory from which you are running the Clojure instance.
 
 
