@@ -8,12 +8,22 @@ There is a lot of development work in an older file, not part of this project.
 
 clojure and overtone installed and up and running with a MIDI controller connected?
 
+[[file:README.org][file:~/repos/granularite/README.org]]
+
+No? [[file:README.org::*sound test][sound test]]
+
 #+begin_src clojure
 (demo 10 (sin-osc (abs  (* 10000 (brown-noise:kr)))))
 #+end_src
 
 #+RESULTS:
 : #<synth-node[loading]: granularite.cf44/audition-synth 33>
+
+#+begin_src clojure
+(stop)
+#+end_src
+
+#+RESULTS:
 
 ** 4-5 blocks to get brown-noise sound
 :PROPERTIES:
@@ -72,7 +82,7 @@ clojure and overtone installed and up and running with a MIDI controller connect
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: granularif44/tgrains-line-synth 35>
+: #<synth-node[live]: granularif44/tgrains-line-synth 40>
 
 
 
@@ -186,7 +196,8 @@ Doc string
 (stop)
 #+end_src
 
-** see README for what the minilogue has
+** see README for what the minilogue used for control change channels
+
 [[file:README.org][file:~/repos/granularite/README.org]]
 [[file:README.org::*Minilogue complete CC numbers][Minilogue complete CC numbers]]
 
@@ -194,7 +205,7 @@ Doc string
 
 *** "simple" explanation
 
-Explain ... in order understand what you want to do.
+Explain ... in order to understand what you want to do.
 
 - changing knobs on the Minilogue
   - change aspects of the currently playing sound
@@ -203,11 +214,45 @@ So, this can happen a few different ways.
 
 The last time I did this I relied on
 
-- a particular synth defintion
+- a particular synth defintion :: say, mouse-rand-grain3 (currently running nicely)
 - an event-handler function
   - this function relied on the synth being called with certain argument "prefixs"
 
-*** set-up defintions
+
+some synth definitions
+- tgrains-line-synth [buffer 
+- reverb-on-left []           
+- mouse-rand-grain3  [buffer
+- minirand-ccgrain-no-line  
+- tgrains-line-synth [buff
+- mouse-rand-grain3  [buff
+
+
+Some "event handler" "meta-definitions" (i.e. takes an active-synth and a "double-colon-name)
+- cc-minilogue1-grains
+- mini-scaling-test
+- update-mini-scaling-test
+
+(remove-event-handler ::obess)                                     
+(remove-event-handler ::mini-obsess)                               
+(remove-event-handler ::update-mini-obsess)                        
+
+(remove-event-handler ::test-range-high)                           
+(remove-event-handler ::print-noteons)                             
+(remove-event-handler ::print-noteons-vels)                        
+(remove-event-handler ::set-current-val-scale-and-play)            
+(remove-event-handler ::pad-control-yancey-centerpos-in-samples)
+
+
+See below for actual usage of first example
+
+defining
+[[*actual definition of a synth and an accompanying event-handler][actual definition of a synth and an accompanying event-handler]]
+
+running
+[[*playback and realtime calls][playback and realtime calls]]
+
+*** Understanding set-up defintions
 
 See the following link to all-apollos.
 
@@ -217,7 +262,7 @@ Provides context for understanding the use of "cc refs" in this function.
 [[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
 
 
-The "problem" with cc-minilogue1-grains-event-handler is what?
+The "problem" with cc-minilogue1-grains-event-handler (note, this name is only used as an org-babel tag) is what?
 
 It hard-codes in the actual output ranges allowed for controlling the "active-synth."
 
@@ -228,8 +273,7 @@ That is, it really only takes a particular synth as an argument.
 Apart from this, all you can really do is give a name to the event handler you are creating for this synth.
 
 
-
-*** actual definitions
+*** actual definition of a synth and an accompanying event-handler
 
 Strip out the documentation string for org and emacs and ivy searching
 
@@ -270,7 +314,13 @@ Strip out the documentation string for org and emacs and ivy searching
    double-colon-name))
 #+END_SRC
 
+See below explanation for 34, 35 etc.:
+
+[[*notes on controlling][notes on controlling]]
+
 *** playback and realtime calls
+
+Start the synth
 
 #+NAME: apotheose-cloud
 #+BEGIN_SRC clojure :results silent
@@ -284,17 +334,43 @@ So, this is going to enable what?
 See just below:
 [[*notes on controlling][notes on controlling]]
 
+Run the handler
 #+NAME: apotheose-cloud-handler
 #+BEGIN_SRC clojure :results silent
 (cc-minilogue1-grains obessive ::obess)
 #+END_SRC
+
+(Org node jumping doesn't like a babel block at the end of a node?)
+*** use the handler
+
+In order for minirand-ccgrain-no-line synth handled by cc-minilogue1-grains ::obess
+
+- VCO1 Shape :: centerpos 36
+- VCO1 Pitch :: trate 34
+- VCO2 Pitch :: dur-numerator 35
+- Cross-mod :: t-rand max 41
+- VCO2 Shape :: amplitude 37
+
+Now, maybe record the interaction? Or move on.
+
+*** Kill the handler
 
 #+BEGIN_SRC clojure :results silent
 (remove-event-handler ::obess)
 #+END_SRC
 
 
-*** notes on controlling
+What will happen when you "kill the node!" (and not the handler) and keep "playing" as it were?
+
+The event-handler will complain like so:
+
+#+begin_src clojure
+java.lang.Exception:
+
+Error - inactive  node modification attempted for node #<synth-node[destroyed]: graf44/minirand-ccgrain-no-line 38> whilst controlling the following values: (:cc34 5.678571428571428)
+#+end_src
+
+*** notes on controlling obess
 
 VCO1 Shape is 36 (centerpos), which relatively quickly takes a noticeable effect.
 
@@ -342,6 +418,7 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 
 ** understanding the synths
 
+
 *** documentation for t-grains
 
 [[file:granulars-copied-from-post-tonal.org::*t-grains documentation][t-grains documentation]]
@@ -362,15 +439,20 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 #+end_src
 
 
-| num-channels | x    |
-| trigger      | x    |
-| bufnum       | x    |
-| rate         | cc34 |
-| center-pos   | cc35 |
-| dur          | cc36 |
-| pan          | cc37 |
-| amp          | cc41 |
-| interp       |      |
+|                 | num-channels | x    |
+|                 | trigger      | x    |
+|                 | bufnum       | x    |
+
+| VCO1 pitch      | rate         | cc34 |
+| VCO1 shape      | dur          | cc36 |
+
+Is this the correct "parameter" for cc35? Depends on the synth?
+| VCO2 Pitch      | center-pos   | cc35 |
+| VCO2 shape      | pan          | cc37 |
+
+| Cross Mod Depth | amp          | cc41 |
+
+|                 | interp       |      |
 
 * Longer, understanding real uses of "resetting atoms"
 
@@ -385,6 +467,7 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 #+end_src
 
 ** code context
+
 For context
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
 [[file:all-apollos.org::*defining][defining]]
@@ -396,7 +479,7 @@ consider whether to use the short "1" buffer or the longer (30-seconds) "2" buff
 Start this up and then work through the atoms below:
 
 #+NAME: apotheose-cloud
-#+BEGIN_SRC clojure :results silent
+#+begin_src clojure :results silent
     (def obessive (minirand-ccgrain-no-line 2))
 
   ;; (def obessive (minirand-ccgrain-no-line 1))
@@ -404,32 +487,33 @@ Start this up and then work through the atoms below:
 
 ** atoms
 
+Evaluating atoms takes time?
+
 #+BEGIN_SRC clojure :results silent
-    (def offset-ones (atom 0))
-    (def offset-tens (atom 0))
-    (def offset-hundreds (atom 0)) 
-    (def ranger-ones (atom 0))
-    (def ranger-tens (atom 0))
-    (def ranger-hundreds (atom 0)) 
-    (def offset (atom 1))
-    (def ranger (atom 1))
+  (def offset-ones (atom 0))
+  (def offset-tens (atom 0))
+  (def offset-hundreds (atom 0)) 
+  (def ranger-ones (atom 0))
+  (def ranger-tens (atom 0))
+  (def ranger-hundreds (atom 0)) 
+  (def offset (atom 1))
+  (def ranger (atom 1))
 
   (def amp-offset (atom 0))
-(def amp-range (atom 0))
+  (def amp-range (atom 0))
 #+END_SRC
 
-** new event handler
+** new event handler: mini-scaling-test
 
 *** explanations
 
-Note that /only/ 36 aka centerpos is being affected.
+Note that--in which synth handler?--/only/ 36 aka centerpos is being noticeably affected ("at first").
 
-The range the centerpos is being scaled to
+The range the centerpos is being scaled to...
 
 starts at "offset" and goes as far as the ranger takes it.
 
 This is mostly useful if you want a lot of options for where to search in the buffer.
-
 
 16 17 18 will have "exponentially" greater effects.
 20 21 22 also.
@@ -505,6 +589,8 @@ Slightly updated, on the way to being renamed "updated"
 new cc knobs used
 
 #+begin_src clojure
+;; block evaluation
+
     { name: "AMP EG ATTACK", cc: 16 },
     { name: "AMP EG DECAY", cc: 17 },
     { name: "AMP EG SUSTAIN", cc: 18 },
@@ -518,9 +604,9 @@ new cc knobs used
 Make specific to amplitude?
 
 #+begin_src clojure
-{ name: "LFO RATE", cc: 24 },
-    { name: "LFO DEPTH", cc: 26 },
-    { name: "VOICE DEPTH", cc: 27 },
+  { name: "LFO RATE", cc: 24 },
+  { name: "LFO DEPTH", cc: 26 },
+  { name: "VOICE DEPTH", cc: 27 },
 
 #+end_src
 
@@ -530,13 +616,21 @@ Make specific to amplitude?
 (mini-scaling-test obessive ::mini-obsess)
 #+END_SRC
 
+Make significantly louder with cc37!
 #+begin_src clojure
 (ctl obessive :cc37 10)
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: graf44/minirand-ccgrain-no-line 46>
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
 
+use the "two-hand" handler, with the envelope knobs ordered from smallest to greatest
+- start with using VCO1 shape AND 
+  - amp EGs affect startpoint cc36 (centerpos) aka "offset"
+  - EGs affect "distance from startpoint" aka "ranger"
+
+
+*** kill the hander: mini-obsess
 #+BEGIN_SRC clojure :results silent
 (remove-event-handler ::mini-obsess)
 ;; (remove-event-handler ::obess)
@@ -548,6 +642,10 @@ Make specific to amplitude?
 : #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
 
 *** use a whole different audio file (elec. piano)
+
+My "mono sounds" for use of mono converted files
+
+[[file:~/Documents/sounds/][file:~/Documents/sounds/]]
 
 #+begin_src clojure
 (def pianos (load-sample (str path-to-sounds "Classic Electric Piano_bip.6.L.aif")))
@@ -563,7 +661,34 @@ Make specific to amplitude?
 #+RESULTS:
 : #'granularite.core/obessive
 
+*** use larger "homemade" SY-style piano file
+
+#+begin_src clojure
+(def pianos2 (load-sample (str path-to-sounds "strange-MONO2.aif")))
+#+end_src
+
+#+RESULTS:
+: #'granularite.core/pianos2
+
+#+begin_src clojure
+(def obessive (minirand-ccgrain-no-line 4))
+#+end_src
+
+#+RESULTS:
+: #'granularite.core/obessive
+
+Recall or rename the handler?
+#+BEGIN_SRC clojure :results silent
+(mini-scaling-test obessive ::mini-obsess)
+#+END_SRC
+
+
+#+begin_src clojure
+(ctl obessive :cc37 10)
+#+end_src
+
 *** old mini-scaling-test block
+
   ;; (defn mini-scaling-test [active-synth double-colon-name]
   ;;   (on-event
   ;;    [:midi :control-change]
