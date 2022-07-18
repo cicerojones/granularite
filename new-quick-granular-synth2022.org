@@ -6,6 +6,19 @@ There is a lot of development work in an older file, not part of this project.
 
 ** have you got everything in order?
 
+#+begin_src clojure
+(use 'overtone.live)
+#+end_src
+
+or
+
+#+begin_src clojure
+(require '[overtone.core] :as o)
+#+end_src
+
+#+RESULTS:
+: class clojure.lang.Compiler$CompilerException
+
 clojure and overtone installed and up and running with a MIDI controller connected?
 
 [[file:README.org][file:~/repos/granularite/README.org]]
@@ -17,7 +30,7 @@ No? [[file:README.org::*sound test][sound test]]
 #+end_src
 
 #+RESULTS:
-: #<synth-node[loading]: granularite.cf44/audition-synth 33>
+: #<synth-node[loading]: granularite.cf44/audition-synth 34>
 
 #+begin_src clojure
 (stop)
@@ -439,20 +452,20 @@ A low enough value for 41 creates a largely "mechanical" effect, with the random
 #+end_src
 
 
-|                 | num-channels | x    |
-|                 | trigger      | x    |
-|                 | bufnum       | x    |
+|   | num-channels | x |
+|   | trigger      | x |
+|   | bufnum       | x |
 
-| VCO1 pitch      | rate         | cc34 |
-| VCO1 shape      | dur          | cc36 |
+| VCO1 pitch | rate | cc34 |
+| VCO1 shape | dur  | cc36 |
 
 Is this the correct "parameter" for cc35? Depends on the synth?
-| VCO2 Pitch      | center-pos   | cc35 |
-| VCO2 shape      | pan          | cc37 |
+| VCO2 Pitch | center-pos | cc35 |
+| VCO2 shape | pan        | cc37 |
 
-| Cross Mod Depth | amp          | cc41 |
+| Cross Mod Depth | amp | cc41 |
 
-|                 | interp       |      |
+|   | interp |   |
 
 * Longer, understanding real uses of "resetting atoms"
 
