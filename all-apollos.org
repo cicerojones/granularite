@@ -1617,12 +1617,13 @@ trackpad)
 
 Note, these are DEFINST
 #+BEGIN_SRC clojure :results output
-(definst grainy-ctl-mousex [b 0 trate 1 amp 0.8]
-  (let [trate trate
-        dur (/ 2 trate)]
-    (t-grains:ar 1 (impulse:ar trate) b 1 ;; mouse-x (no line/random)
-                 (mouse-x:kr 0 (buf-dur:kr b)) dur
-                 0 amp 2)))
+
+  (definst grainy-ctl-mousex [b 0 trate 1 amp 0.8]
+    (let [trate trate
+	  dur (/ 2 trate)]
+      (t-grains:ar 1 (impulse:ar trate) b 1 ;; mouse-x (no line/random)
+		   (mouse-x:kr 0 (buf-dur:kr b)) dur
+		   0 amp 2)))
 
 
 
