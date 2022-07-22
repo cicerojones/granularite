@@ -30,7 +30,7 @@ No? [[file:README.org::*sound test][sound test]]
 #+end_src
 
 #+RESULTS:
-: #<synth-node[loading]: granularite.cf44/audition-synth 34>
+: #<synth-node[loading]: granularite.cf44/audition-synth 25>
 
 #+begin_src clojure
 (stop)
@@ -82,10 +82,10 @@ No? [[file:README.org::*sound test][sound test]]
 (def line-for-variation1 (tgrains-line-synth :buffer 0))
 #+end_src
 
-
 #+begin_src clojure
-(stop)
+(tgrains-line-synth)
 #+end_src
+
 
 
 ** make changes to the basic synth
@@ -95,9 +95,13 @@ No? [[file:README.org::*sound test][sound test]]
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: granularif44/tgrains-line-synth 40>
+: class java.lang.Exception
 
+#+begin_src clojure
+(stop)
+#+end_src
 
+#+RESULTS:
 
 
 ** load a different sound source
@@ -602,7 +606,7 @@ Slightly updated, on the way to being renamed "updated"
 new cc knobs used
 
 #+begin_src clojure
-;; block evaluation
+;; DOCUMENTATION not evaluation
 
     { name: "AMP EG ATTACK", cc: 16 },
     { name: "AMP EG DECAY", cc: 17 },
@@ -635,7 +639,7 @@ Make significantly louder with cc37!
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 39>
 
 use the "two-hand" handler, with the envelope knobs ordered from smallest to greatest
 - start with using VCO1 shape AND 
@@ -654,7 +658,7 @@ use the "two-hand" handler, with the envelope knobs ordered from smallest to gre
 #+RESULTS:
 : #<synth-node[live]: graf44/minirand-ccgrain-no-line 48>
 
-*** use a whole different audio file (elec. piano)
+** use a whole different audio file (elec. piano)
 
 My "mono sounds" for use of mono converted files
 
@@ -699,6 +703,9 @@ Recall or rename the handler?
 #+begin_src clojure
 (ctl obessive :cc37 10)
 #+end_src
+
+#+RESULTS:
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 39>
 
 *** old mini-scaling-test block
 
@@ -799,7 +806,7 @@ Recall or rename the handler?
 ;; (remove-event-handler ::obess)
 #+END_SRC
 
-*** for debugging purposes
+*** println to standard-output for debugging purposes
 
 You want to involve a println somehow...
 

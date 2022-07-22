@@ -1,1 +1,14 @@
-{:deps {overtone/overtone {:mvn/version "0.10.6"}}}
+;; {:deps {overtone/overtone
+;;         {:mvn/version "0.10.6"}
+;;         {:git/url "https://github.com/overtone/overtone.git"
+;;          :sha "2005bd7c40b8f348d615e61c0687c79143696a2c"}}}
+;; {overtone/overtone {:git/url "https://github.com/overtone/overtone.git"
+;;                     :sha "2005bd7c40b8f348d615e61c0687c79143696a2c"}}
+
+{:deps {overtone/overtone
+        ;; {:mvn/version "0.10.6"}
+        {:git/url "https://github.com/overtone/overtone.git"
+                    :sha "2005bd7c40b8f348d615e61c0687c79143696a2c"}
+        }}
+
+;; org.clojure/clojure {:mvn/version "1.11.1"}
