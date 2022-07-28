@@ -217,6 +217,10 @@ Step 2. Begin to control with with the note-on-eventer
 #+END_SRC
 
 #+BEGIN_SRC clojure :results silent
+(recording-start "~/Desktop/rhodes-robot1.wav")
+#+END_SRC
+
+#+BEGIN_SRC clojure :results silent
 (recording-stop)
 #+END_SRC
 
