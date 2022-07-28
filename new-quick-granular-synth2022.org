@@ -1,59 +1,78 @@
-* Quick
+#+TITLE: Quick Overtones
+#+SETUPFILE: ~/repos/org/resources/org-templates/new-setup/setup-html5-options.org
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="resources/public/css/example-solar-lite.css"/>
+* Quick startup
 
-** based on work in the other file with earlier granular-synth efforts
+** What is this? What am I to do?
 
-There is a lot of development work in an older file, not part of this project.
+The effort on display here is just that gory process of self-documentation...
 
-** have you got everything in order?
+Mostly there are code blocks. They can be run in Emacs. Or just perused if you are not masochistically inclined to set everything up correctly.
+
+** self-documenting the self-documentation
+
+I have copied the more helpful parts in here from files that were created earlier (while creating a score for a 2019 performance project about loosely tied to Stravinsky's "Apollo").
+
+Thus, there is a lot of work not shown that led to some of these things. Since all that was truly even more "work-in-progress", it is not part of this project.
+
+** Start up Overtone
+
+Think you have you got everything in order? Hah!
 
 #+begin_src clojure
 (use 'overtone.live)
 #+end_src
 
-or
+NB. The above assumes you don't mind the quick and dirty approach.
+
+A more "hygenic", non-clobbering approach that pays attention to namespaces and such might alias the overtone library as such:
 
 #+begin_src clojure
 (require '[overtone.core] :as o)
 #+end_src
 
-#+RESULTS:
-: class clojure.lang.Compiler$CompilerException
 
-clojure and overtone installed and up and running with a MIDI controller connected?
+Assuming clojure and overtone are successfuly installed and up and running,
 
-[[file:README.org][file:~/repos/granularite/README.org]]
+You might want to do that all again with a MIDI controller connected. There are various tips and notes on this in a README (not linked here).
 
-No? [[file:README.org::*sound test][sound test]]
+
+Yes? No? Turn the volume down and try a pretty crazy sound test!
 
 #+begin_src clojure
 (demo 10 (sin-osc (abs  (* 10000 (brown-noise:kr)))))
 #+end_src
 
 #+RESULTS:
-: #<synth-node[loading]: granularite.cf44/audition-synth 25>
+: #<synth-node[loading]: granularite.cf44/audition-synth 49>
 
+And turn it off!
+
+#+NAME: stop
 #+begin_src clojure
 (stop)
 #+end_src
 
-#+RESULTS:
+#+RESULTS: stop
 
-** 4-5 blocks to get brown-noise sound
+
+
+** Load up a local file
 :PROPERTIES:
 :header-args: :results silent
 :END:
 
-*** need a NOT-HARDCODED-PATH to local sounds
+*** One approach to streamlining access to on-disk sounds
+
+Utlimately there are about 4-5 blocks to get brown-noise sound.
+
+Ideally, you want to use a NOT-HARDCODED-PATH to local sounds!
+
+
 
 #+begin_src clojure
-  ;; (def local-machine "Users/oi")
-    ;; (def path-to-sounds "/Applications/SuperCollider/SuperCollider.app/Contents/Resources/")
-  ;; (def path-to-sounds (str local-machine "/Documents/sounds/"))
-     ;; (def path-to-mono (str path-to-sounds "sounds/all-mono/"))
 (def path-to-sounds (str "~/Documents/sounds/"))
 #+end_src
-
-"/Users/oi/Documents/sounds/brown30-mono.wav"
 
 #+begin_src clojure
 (def variation1 (load-sample (str path-to-sounds "brown30-mono.wav")))
@@ -82,16 +101,12 @@ No? [[file:README.org::*sound test][sound test]]
 (def line-for-variation1 (tgrains-line-synth :buffer 0))
 #+end_src
 
-#+begin_src clojure
-(tgrains-line-synth)
-#+end_src
+*** make changes to the basic synth
 
-
-
-** make changes to the basic synth
+Slow to take effect!
 
 #+begin_src clojure
-(ctl line-for-variation1  :trate 0.3 :dur-numerator 12)
+(ctl line-for-variation1  :trate 0.3 :dur-numerator 12 :amp 10)
 #+end_src
 
 #+RESULTS:
@@ -110,23 +125,33 @@ No? [[file:README.org::*sound test][sound test]]
 :END:
 
 *** ideally there are no problems
+
 On this machine there is the following file:
 
 /Users/oi/Documents/sounds/slow-Indian-dulcimer-MONO.mp3
 
-BUT, you need uncompressed audio!
+
+
+*** But there are always problems
+
+Like, you need uncompressed audio!
+
+Let's not spend too much time on them here.
+
+Helpful Overtone error reporting:
+
+#+begin_quote
 Unable to read file - perhaps path is not a valid audio file (only ["wav" "aiff" "aif"] supported) : /Users/oi/Documents/sounds/slow-Indian-dulcimer-MONO.mp3
+#+end_quote
 
+*** actually change source file and start ordinary playback
 
-*** there are alwys problems
-
-Don't show them here!
-
-*** change source file and start ordinary playback
-
+This loads a sample:
 #+begin_src clojure
 (def variation3 (load-sample (str path-to-sounds "SHORT-slow-Indian-dulcimer-MONO.wav")))
 #+end_src
+
+And this will play it back normally.
 
 #+BEGIN_SRC clojure :session getting-started
 (defsynth reverb-on-left []
@@ -137,7 +162,9 @@ Don't show them here!
 (reverb-on-left)
   #+END_SRC
 
-*** any difference between an inst and a synth def?
+*** Use a definst instead?
+
+What are the differences between a definst and a defsynth? It's explained somewhere!
 
 Just to hear what the plain, whole variation3 sounds like (it's short!)
 
@@ -147,35 +174,44 @@ Just to hear what the plain, whole variation3 sounds like (it's short!)
 (gran1)
 #+END_SRC
 
-Let's get a longer sample
-
-*** try again with the granular synth using a line
+This is a slightly longer sample. How does playing it back with the granular synth defined earlier go?
 
 #+begin_src clojure
 (def line-for-variation2 (tgrains-line-synth variation3))
 #+end_src
 
+And just make changes to this one again. 
+
 #+begin_src clojure
-(ctl line-for-variation2  :trate 0.3 :dur-numerator 12)
+(ctl line-for-variation2  :trate 0.3 :dur-numerator 12 :amp 5)
 #+end_src
 
-*** further improve source
+#+begin_src clojure
+(stop)
+#+end_src
+
+*** Load a sample even longer yet
+
+To further improve the interest of playback, here's a new, longer source.
 
 #+begin_src clojure
 (def variation4 (load-sample (str path-to-sounds "30seconds-slow-Indian-dulcimer-MONO.wav")))
 #+end_src
 
+Played back with the same synth.
+
 #+begin_src clojure
 (def line-for-variation4 (tgrains-line-synth variation4))
 #+end_src
 
-* Medium quick
+* Medium quickstartup
 
 ** to interact with buffer using MIDI, start with mouse
 :PROPERTIES:
 :header-args: :results silent
 :END:
 
+Assuming
 #+begin_src clojure
 (midi-connected-devices)
 #+end_src
@@ -218,7 +254,7 @@ Doc string
 [[file:README.org][file:~/repos/granularite/README.org]]
 [[file:README.org::*Minilogue complete CC numbers][Minilogue complete CC numbers]]
 
-** begin setting up MIDI and refs
+** begin setting up MIDI and "identifiers" i.e. reference value holders
 
 *** "simple" explanation
 
@@ -269,17 +305,18 @@ defining
 running
 [[*playback and realtime calls][playback and realtime calls]]
 
-*** Understanding set-up defintions
+*** Understanding set-up defintions for synth and event-handler
 
-See the following link to all-apollos.
+- ~minirand-ccgrain-no-line~ :: requires 6 parameters
+~cc-minilogue1-grains~ :: requires an active-synth and a "double-colon" name
 
-Provides context for understanding the use of "cc refs" in this function.
+The following link to "all-apollos.org" provides ample context for understanding the use of what I'm calling "cc refs".
 
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
 [[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
 
 
-The "problem" with cc-minilogue1-grains-event-handler (note, this name is only used as an org-babel tag) is what?
+The "problem" with the event-handler that is cc-minilogue1-grains (compare the name used only as an org-babel tag) is what?
 
 It hard-codes in the actual output ranges allowed for controlling the "active-synth."
 
@@ -287,12 +324,12 @@ It also is relatively fixed, as a function.
 
 That is, it really only takes a particular synth as an argument.
 
-Apart from this, all you can really do is give a name to the event handler you are creating for this synth.
+So, all you can really do is give a name to the event handler you are creating for some synth you've also created.
 
 
 *** actual definition of a synth and an accompanying event-handler
 
-Strip out the documentation string for org and emacs and ivy searching
+Striping out the documentation string for org and emacs and ivy searching
 
 "Summary of arglist: buffer; trate; amp; centerpos..."
 
@@ -324,7 +361,7 @@ Strip out the documentation string for org and emacs and ivy searching
        36 (ctl active-synth :cc36 (scale-range vel 1 127 0 100)) 
 ;; consider the following for a choppier, but actual buf-dur length
 ;; (ctl active-synth :cc36 (scale-range vel 1 127 0 190))
-       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 1))
+       37 (ctl active-synth :cc37 (scale-range vel 1 127 0 2))
        41 (ctl active-synth :cc41 (scale-range vel 1 127 0.01 1))
        :else nil
        ))
@@ -337,7 +374,7 @@ See below explanation for 34, 35 etc.:
 
 *** playback and realtime calls
 
-Start the synth
+Start the synth (with the short file?)
 
 #+NAME: apotheose-cloud
 #+BEGIN_SRC clojure :results silent
@@ -346,29 +383,36 @@ Start the synth
 #+END_SRC
 
 
-So, this is going to enable what?
+So, this is going to do what?
 
-See just below:
-[[*notes on controlling][notes on controlling]]
+Put a synth on the server that will be "looping" on a bit of a sample.
 
-Run the handler
+Now, run the handler
 #+NAME: apotheose-cloud-handler
 #+BEGIN_SRC clojure :results silent
 (cc-minilogue1-grains obessive ::obess)
 #+END_SRC
 
 (Org node jumping doesn't like a babel block at the end of a node?)
+
 *** use the handler
 
 In order for minirand-ccgrain-no-line synth handled by cc-minilogue1-grains ::obess
-
+Slow to take effect; quicker after the dur-numerator is shortened
 - VCO1 Shape :: centerpos 36
+
+
 - VCO1 Pitch :: trate 34
+
+Will eventually be noticeable
 - VCO2 Pitch :: dur-numerator 35
 - Cross-mod :: t-rand max 41
 - VCO2 Shape :: amplitude 37
 
 Now, maybe record the interaction? Or move on.
+
+[[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
+[[file:all-apollos.org::*record all sound][record all sound]]
 
 *** Kill the handler
 
@@ -433,7 +477,7 @@ A low enough value creates a kind of "tremolo" effect of volume going in and out
 
 A low enough value for 41 creates a largely "mechanical" effect, with the randomness eliminated.
 
-** understanding the synths
+** understanding the kinds of synth you are using
 
 
 *** documentation for t-grains
@@ -473,7 +517,7 @@ Is this the correct "parameter" for cc35? Depends on the synth?
 
 * Longer, understanding real uses of "resetting atoms"
 
-** first of all, what are your synth
+** first of all, what are your synths
 
 #+begin_src clojure
   ;; just for easy reading; NOT FOR EVAL!
@@ -489,11 +533,12 @@ For context
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
 [[file:all-apollos.org::*defining][defining]]
 
-** new synth with "no line"
+** same "no line" synth
 
 consider whether to use the short "1" buffer or the longer (30-seconds) "2" buffer.
 
-Start this up and then work through the atoms below:
+Start this up and then work through the atoms below. 
+Note this is same synth but being called with the longer file
 
 #+NAME: apotheose-cloud
 #+begin_src clojure :results silent
@@ -522,8 +567,12 @@ Evaluating atoms takes time?
 
 ** new event handler: mini-scaling-test
 
-*** explanations
+*** overview note
+Work through the above example quickly and remember it.
 
+You may now be in a good position to "perform" the "two handed" 
+
+*** detailed talk through
 Note that--in which synth handler?--/only/ 36 aka centerpos is being noticeably affected ("at first").
 
 The range the centerpos is being scaled to...
@@ -639,13 +688,12 @@ Make significantly louder with cc37!
 #+end_src
 
 #+RESULTS:
-: #<synth-node[live]: graf44/minirand-ccgrain-no-line 39>
+: #<synth-node[live]: graf44/minirand-ccgrain-no-line 51>
 
 use the "two-hand" handler, with the envelope knobs ordered from smallest to greatest
 - start with using VCO1 shape AND 
   - amp EGs affect startpoint cc36 (centerpos) aka "offset"
   - EGs affect "distance from startpoint" aka "ranger"
-
 
 *** kill the hander: mini-obsess
 #+BEGIN_SRC clojure :results silent
@@ -660,7 +708,9 @@ use the "two-hand" handler, with the envelope knobs ordered from smallest to gre
 
 ** use a whole different audio file (elec. piano)
 
-My "mono sounds" for use of mono converted files
+*** Steps
+
+Link to my "mono sounds" for creating and finding mono converted files
 
 [[file:~/Documents/sounds/][file:~/Documents/sounds/]]
 
@@ -671,12 +721,21 @@ My "mono sounds" for use of mono converted files
 #+RESULTS:
 : #'granularite.core/pianos
 
+Now run this and go back and run the ~mini-scaling-test~ on obessive and play:
+
 #+begin_src clojure
 (def obessive (minirand-ccgrain-no-line 3))
 #+end_src
 
 #+RESULTS:
 : #'granularite.core/obessive
+
+1. lower the dur-numerator to be "snippet"
+2. create a medium fast t-rate
+3. dial up and down the randomness
+   1. use small random values for stepping through the centerpos
+   2. use larger random values for sticking with a given setting
+4. use the "ranger" values incrementally to see the effect of a given centerpos motion
 
 *** use larger "homemade" SY-style piano file
 
@@ -708,6 +767,8 @@ Recall or rename the handler?
 : #<synth-node[live]: graf44/minirand-ccgrain-no-line 39>
 
 *** old mini-scaling-test block
+
+Why and how is this doing here?
 
   ;; (defn mini-scaling-test [active-synth double-colon-name]
   ;;   (on-event
