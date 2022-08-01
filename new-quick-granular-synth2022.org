@@ -313,7 +313,7 @@ running
 The following link to "all-apollos.org" provides ample context for understanding the use of what I'm calling "cc refs".
 
 [[file:all-apollos.org][file:~/repos/granularite/all-apollos.org]]
-[[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
+[[file:all-apollos.org::*minilogue for grains][minilogue for grains]]
 
 
 The "problem" with the event-handler that is cc-minilogue1-grains (compare the name used only as an org-babel tag) is what?
@@ -370,7 +370,7 @@ Striping out the documentation string for org and emacs and ivy searching
 
 See below explanation for 34, 35 etc.:
 
-[[*notes on controlling][notes on controlling]]
+[[*notes on controlling obess][notes on controlling obess]]
 
 *** playback and realtime calls
 
