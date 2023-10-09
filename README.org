@@ -26,6 +26,10 @@ I.e. go to the project directory
 
 and then
 
+Note, you can also try to run using cider-connect directly from emacs.
+
+but there's a verbose reporting of synths on when you call, say, demo in the repl (but not from a code blocks)
+
 #+begin_src shell
 lein repl
 #+end_src
@@ -83,7 +87,11 @@ You'll want to have these blocks open in a file in a directory from which you ar
 * Understand event-handling with refs and a MIDI controller            :midi:
 
 ** helpful links
+the all-apollos file is messy;
+New quick-granular is more concise
+[[file:new-quick-granular-synth2022.org]]
 
+[[file:all-apollos.org]]
 [[file:all-apollos.org::*note-on ON-EVENTER (note-on event handler for ANY active synth!)][note-on ON-EVENTER (note-on event handler for ANY active synth!)]]
 
 [[file:all-apollos.org::*cc-change ON-EVENTER][cc-change ON-EVENTER]]
@@ -103,7 +111,6 @@ create a "liked-values" atom reference
 [[id:F14EC44C-04DE-4611-B8C0-9D5355536765][control channel atoms aplenty, with accompanying ~on-event~]]
 
 ** Minilogue complete CC numbers
-
 #+begin_src js
 var cctls = [
     { name: "VCO 1 PITCH", cc: 34 },
