@@ -49,6 +49,7 @@ Step 2. Begin to control with with the note-on-eventer
 (def var2-noline (general-tgrains-synth :buffer 1 :centerpos 1))
 #+END_SRC
 
+defined below, silly
 #+BEGIN_SRC clojure :results silent
 ;; (note-on-eventer var2-noline ::no-liner)
 ;;
@@ -1246,8 +1247,8 @@ you need for a given ugen that will scale within these ranges
 
 
 
-** rescaling atoms with the minilogue
-*** developing
+* rescaling atoms with the minilogue
+** developing
      :PROPERTIES:
      :DATE_CREATED: [2017-03-03 Fri 17:55]
      :END:
@@ -1309,12 +1310,12 @@ and offset can be 1-127 or 10-1270 100-12700
 #+BEGIN_SRC clojure :results silent
 34 (test synth :cc0-34 @offset (+ @offset @ranger))
 #+END_SRC
-*** defining
+** defining
      :PROPERTIES:
      :DATE_CREATED: [2017-03-04 Sat 15:30]
      :END:
 
-**** explanation
+*** explanation
 
 Using macro defined previously, create a large event-handler for the
 minilogue that uses two sets of knobs to dynamically reset both the
@@ -1326,7 +1327,7 @@ or how it was working that I had to use a non-granular synth to check
 what was happening.
 
 
-**** define macro from above
+*** define macro from above
 
 C-c C-v g to go to the following block
 (can't evaluate a macro from a remote block?)
@@ -1335,7 +1336,7 @@ Eliminate the explicit call tag for export purposes:
 
 cc-knob-scale-range-macro(active-synth cc-knob tar-lo tar-hi vel)
 
-**** refs needed for this scaling function
+*** refs needed for this scaling function
 
 #+BEGIN_SRC clojure :results silent
 (def offset-ones (atom 0))
@@ -1349,7 +1350,7 @@ cc-knob-scale-range-macro(active-synth cc-knob tar-lo tar-hi vel)
 #+END_SRC
 
 
-**** create synths
+*** create synths
 
 See granular synth defined for minilogue cc knobs
 [[id:ABD50379-307B-44F0-BA31-7540257029DC][minilogue for grains]]
@@ -1501,7 +1502,8 @@ See granular synth defined for minilogue cc knobs
 ;; (remove-event-handler ::yancey-goldberg-redux)
 #+END_SRC
 
-* configure your whole MIDI controller
+
+* configure your whole Axiom MIDI controller
   :PROPERTIES:
   :ID:       0DDA001F-5EAC-4E8F-A1D0-16EEDBF8F828
   :END:
