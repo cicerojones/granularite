@@ -31,6 +31,9 @@ A more "hygenic", non-clobbering approach that pays attention to namespaces and 
 (require '[overtone.core] :as o)
 #+end_src
 
+#+RESULTS:
+: class clojure.lang.Compiler$CompilerException
+
 
 Assuming clojure and overtone are successfuly installed and up and running,
 
